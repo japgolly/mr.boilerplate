@@ -1,10 +1,10 @@
 package japgolly.mrboilerplate.core
 
-import japgolly.mrboilerplate.base.test.BaseTestUtil._
 import sourcecode.Line
 import utest._
 
 object InputParserTest extends TestSuite {
+  import CoreTestUtil._
   import UnsafeTypes._
 
   private def assertParse(input: String)(classes: Class*)(implicit l: Line): Unit = {

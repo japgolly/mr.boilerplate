@@ -58,32 +58,22 @@ object Build {
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
       releaseTagComment             := s"v${(version in ThisBuild).value}",
       releaseVcsSign                := true,
+      libraryDependencies ++= Seq(
+        "com.lihaoyi"                   %%% "utest"     % Ver.MTest,
+        "com.github.japgolly.microlibs" %%% "test-util" % Ver.Microlibs),
       addCompilerPlugin("com.olegpy" %% "better-monadic-for" % Ver.BetterMonadicFor))
       .configure(preventPublication))
 
   lazy val root =
     Project("root", file("."))
       .configure(commonSettings.jvm)
-      .aggregate(baseTestJVM, baseTestJS, coreJVM, coreJS, webapp)
-
-  lazy val baseTestJVM = baseTest.jvm
-  lazy val baseTestJS  = baseTest.js
-  lazy val baseTest = crossProject(JSPlatform, JVMPlatform)
-    .in(file("base-test"))
-    .configureCross(commonSettings)
-    .settings(
-      moduleName := "base-test",
-      libraryDependencies ++= Seq(
-        "com.lihaoyi"                   %%% "utest"     % Ver.MTest,
-        "com.github.japgolly.microlibs" %%% "test-util" % Ver.Microlibs,
-        "com.github.japgolly.univeq"    %%% "univeq"    % Ver.UnivEq))
+      .aggregate(coreJVM, coreJS, webapp)
 
   lazy val coreJVM = core.jvm
   lazy val coreJS  = core.js
   lazy val core = crossProject(JSPlatform, JVMPlatform)
     .in(file("core"))
     .configureCross(commonSettings)
-    .dependsOn(baseTest % Test)
     .settings(
       moduleName := "core",
       libraryDependencies ++= Seq(
@@ -97,7 +87,7 @@ object Build {
     .in(file("webapp"))
     .enablePlugins(ScalaJSPlugin)
     .configure(commonSettings.js)
-    .dependsOn(coreJS, baseTestJS % Test)
+    .dependsOn(coreJS)
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
