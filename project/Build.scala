@@ -50,6 +50,7 @@ object Build {
       scalacOptions                ++= scalacFlags,
       scalacOptions in Test        --= Seq("-Ywarn-dead-code"),
       shellPrompt in ThisBuild      := ((s: State) => Project.extract(s).currentRef.project + "> "),
+      testFrameworks                := Seq(new TestFramework("utest.runner.Framework")),
       triggeredMessage              := Watched.clearWhenTriggered,
       incOptions                    := incOptions.value,
       updateOptions                 := updateOptions.value.withCachedResolution(true),
@@ -59,23 +60,29 @@ object Build {
       addCompilerPlugin("com.olegpy" %% "better-monadic-for" % Ver.BetterMonadicFor))
       .configure(preventPublication))
 
-  def utestSettings = ConfigureBoth(
-    _.settings(
-      testFrameworks      += new TestFramework("utest.runner.Framework"),
-      libraryDependencies ++= Seq(
-        "com.lihaoyi"                   %%% "utest"     % Ver.MTest     % Test,
-        "com.github.japgolly.microlibs" %%% "test-util" % Ver.Microlibs % Test)))
-
   lazy val root =
     Project("root", file("."))
       .configure(commonSettings.jvm)
-      .aggregate(coreJVM, coreJS, webapp)
+      .aggregate(baseTestJVM, baseTestJS, coreJVM, coreJS, webapp)
+
+  lazy val baseTestJVM = baseTest.jvm
+  lazy val baseTestJS  = baseTest.js
+  lazy val baseTest = crossProject(JSPlatform, JVMPlatform)
+    .in(file("base-test"))
+    .configureCross(commonSettings)
+    .settings(
+      moduleName := "base-test",
+      libraryDependencies ++= Seq(
+        "com.lihaoyi"                   %%% "utest"     % Ver.MTest,
+        "com.github.japgolly.microlibs" %%% "test-util" % Ver.Microlibs,
+        "com.github.japgolly.univeq"    %%% "univeq"    % Ver.UnivEq))
 
   lazy val coreJVM = core.jvm
   lazy val coreJS  = core.js
   lazy val core = crossProject(JSPlatform, JVMPlatform)
     .in(file("core"))
-    .configureCross(commonSettings, utestSettings)
+    .configureCross(commonSettings)
+    .dependsOn(baseTest % Test)
     .settings(
       moduleName := "core",
       libraryDependencies ++= Seq(
@@ -86,8 +93,8 @@ object Build {
   lazy val webapp = project
     .in(file("webapp"))
     .enablePlugins(ScalaJSPlugin)
-    .configure(commonSettings.js, utestSettings.js)
-    .dependsOn(coreJS)
+    .configure(commonSettings.js)
+    .dependsOn(coreJS, baseTestJS % Test)
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
