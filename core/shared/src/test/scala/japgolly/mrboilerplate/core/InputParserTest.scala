@@ -15,6 +15,8 @@ object InputParserTest extends TestSuite {
 
   override def tests = Tests {
 
+    'empty - assertParse("")()
+
     'mono - {
       val input =
       """
