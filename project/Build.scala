@@ -19,6 +19,7 @@ object Build {
 
   object Ver {
     final val BetterMonadicFor = "0.3.1"
+    final val FastParse        = "2.1.3"
     final val Microlibs        = "1.22"
     final val MTest            = "0.6.9"
     final val Scala212         = "2.12.8"
@@ -86,6 +87,8 @@ object Build {
     .settings(
       moduleName := "core",
       libraryDependencies ++= Seq(
+        "com.lihaoyi"                   %%% "fastparse"  % Ver.FastParse,
+        "com.lihaoyi"                   %%% "scalaparse" % Ver.FastParse,
         "com.github.japgolly.microlibs" %%% "stdlib-ext" % Ver.Microlibs,
         "com.github.japgolly.microlibs" %%% "utils"      % Ver.Microlibs,
         "com.github.japgolly.univeq"    %%% "univeq"     % Ver.UnivEq))
