@@ -2,6 +2,7 @@ package japgolly.mrboilerplate.core
 
 import fastparse._
 import fastparse.ScalaWhitespace._
+import japgolly.univeq.UnivEq
 
 object InputParser {
 
@@ -20,8 +21,13 @@ object InputParser {
       with scalaparse.Types
       with scalaparse.Exprs {
 
+    def TypeArg2[_: P]: P[String] = {
+      def CtxBounds = P((`<%` ~/ Type).rep ~ (`:` ~/ Type).rep)
+      P(((Id | `_`) ~ TypeArgList.?).! ~ TypeBounds ~ CtxBounds)
+    }
+
     def TypeArgList2[_: P]: P[Seq[String]] = {
-      def Variant: P[String] = P( Annot.rep ~ CharIn("+\\-").? ~ TypeArg.! )
+      def Variant: P[String] = P( Annot.rep ~ CharIn("+\\-").? ~ TypeArg2 )
       P( "[" ~/ Variant.repTC(1) ~ "]" )
     }
 
@@ -82,7 +88,7 @@ object InputParser {
   // ===================================================================================================================
 
   private def cls[_: P]: P[Class] =
-    P(Scala.ClsDef).map {
+    P(Scala.Mod.? ~ Scala.ClsDef).map {
       case (name, types, fields) =>
         Class(
           name       = name,
@@ -90,12 +96,25 @@ object InputParser {
           fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList)
     }
 
-  private def unrecognised[_: P]: P[Unit] =
-    P((!cls ~~ AnyChar).repX)
+  private def unrecognised[_: P]: P[Unrecognised] =
+    P((!cls ~~ AnyChar).repX.!.map(t => Unrecognised(t.trim)))
 
-  private def main[_: P]: P[Seq[Class]] =
-    P((unrecognised ~ cls).rep ~ unrecognised ~ End)
+  private def clsE[_: P]: P[Element] = cls.map(Right(_))
+  private def unrecognisedE[_: P]: P[Element] = unrecognised.map(Left(_))
 
-  def parseText(t: String): Seq[Class] =
-    parse(t, main(_)).get.value // TODO .get
+  type Element = Either[Unrecognised, Class]
+
+  private def main[_: P]: P[Iterator[Element]] =
+    P((unrecognisedE ~ clsE).rep ~ unrecognisedE ~ End)
+    .map(x => x._1.iterator.flatMap(y => y._1 :: y._2 :: Nil) ++ Iterator.single(x._2))
+
+  def parse(t: String): List[Element] =
+    fastparse.parse(t, main(_))
+      .get
+      .value
+      .filterNot(_.left.exists(_.text.isEmpty))
+      .toList
+
+  final case class Unrecognised(text: String)
+  implicit def univEqUnrecognised: UnivEq[Unrecognised] = UnivEq.derive
 }

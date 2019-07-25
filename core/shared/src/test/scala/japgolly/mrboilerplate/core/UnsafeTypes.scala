@@ -16,4 +16,9 @@ object UnsafeTypes {
   implicit def fieldsFromStrStr[F[x] <: Traversable[x], A](s: F[A])(implicit f: A => Field, cbf: CanBuildFrom[Nothing, Field, F[Field]]): F[Field] =
     (cbf.apply() ++= s.toIterator.map(f)).result()
 
+  implicit def inputParserElementL(a: InputParser.Unrecognised): InputParser.Element =
+    Left(a)
+
+  implicit def inputParserElementR(a: Class): InputParser.Element =
+    Right(a)
 }
