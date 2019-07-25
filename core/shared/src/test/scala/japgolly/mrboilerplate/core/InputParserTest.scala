@@ -17,10 +17,12 @@ object InputParserTest extends TestSuite {
 
     'empty - assertParse("")()
 
+    'whitespace - assertParse("  \n ")()
+
     'mono - {
       val input =
       """
-        |package japgolly.mrboilerplate.core
+        |  package japgolly.mrboilerplate.core
         |
         |final case class Class(typeParams: List[Type], fields: List[Field])
         |
