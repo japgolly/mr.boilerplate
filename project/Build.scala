@@ -18,11 +18,12 @@ object Build {
     Lib.publicationSettings(ghProject)
 
   object Ver {
-    final val Microlibs = "1.22"
-    final val MTest     = "0.6.9"
-    final val Scala212  = "2.12.8"
-    final val SJSReact  = "1.4.2"
-    final val UnivEq    = "1.1.0"
+    final val BetterMonadicFor = "0.3.1"
+    final val Microlibs        = "1.22"
+    final val MTest            = "0.6.9"
+    final val Scala212         = "2.12.8"
+    final val SJSReact         = "1.4.2"
+    final val UnivEq           = "1.0.8"
   }
 
   def scalacFlags = Seq(
@@ -54,7 +55,8 @@ object Build {
       updateOptions                 := updateOptions.value.withCachedResolution(true),
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
       releaseTagComment             := s"v${(version in ThisBuild).value}",
-      releaseVcsSign                := true)
+      releaseVcsSign                := true,
+      addCompilerPlugin("com.olegpy" %% "better-monadic-for" % Ver.BetterMonadicFor))
       .configure(preventPublication))
 
   def utestSettings = ConfigureBoth(
@@ -83,10 +85,11 @@ object Build {
 
   lazy val webapp = project
     .in(file("webapp"))
+    .enablePlugins(ScalaJSPlugin)
     .configure(commonSettings.js, utestSettings.js)
     .dependsOn(coreJS)
     .settings(
-      moduleName          := "webapp",
+      moduleName := "webapp",
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %% "extra" % Ver.SJSReact))
+        "com.github.japgolly.scalajs-react" %%% "extra" % Ver.SJSReact))
 }
