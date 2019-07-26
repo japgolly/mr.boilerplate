@@ -34,6 +34,9 @@ final case class Class(name: String, typeParams: List[Type], fields: List[Field]
   def nameWithTypesApplied: String =
     name + typeParamAp
 
+  val fieldNames: String =
+    fields.map(_.name).mkString(", ")
+
   val fieldNameStrs: String =
     fields.map(_.name.quote).mkString(", ")
 }

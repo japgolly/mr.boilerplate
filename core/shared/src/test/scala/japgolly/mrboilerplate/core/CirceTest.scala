@@ -88,5 +88,28 @@ object CirceTest extends TestSuite {
         |implicit val encoderFieldName: Encoder[FieldName] =
         |  Encoder[String].contramap(_.value)
         |""".stripMargin)
+
+    'monadic - assertGen(
+      Class("X", Nil, List("a" -> "A", "b" -> "B")),
+      Circe.defaultOptions.copy(monadicObjects = true)
+    )(
+      """
+        |implicit val decoderX: Decoder[X] =
+        |  Decoder.instance { c =>
+        |    for {
+        |      a <- c.get[A]("a")
+        |      b <- c.get[B]("b")
+        |    } yield X(a, b)
+        |  }
+        |""".stripMargin,
+      """
+        |implicit val encoderX: Encoder[X] =
+        |  Encoder.instance { value =>
+        |    Json.obj(
+        |      "a" -> value.a.asJson,
+        |      "b" -> value.b.asJson,
+        |    )
+        |  }
+        |""".stripMargin)
   }
 }
