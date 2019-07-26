@@ -24,6 +24,12 @@ object InputParserTest extends TestSuite {
       """
         |  package japgolly.mrboilerplate.core
         |
+        |// omg
+        |
+        |/* x */
+        |
+        |import x._
+        |
         |final case class Class(typeParams: List[Type], fields: List[Field])
         |
         |final case class Field(name: FieldName, typ: Type)
@@ -32,7 +38,6 @@ object InputParserTest extends TestSuite {
         |String)case   class   Type  (v:T)
         |""".stripMargin
       assertParse(input)(
-        Unrecognised("package japgolly.mrboilerplate.core"),
         Class("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]")),
         Class("Field", Nil, List("name" -> "FieldName", "typ" -> "Type")),
         Class("FieldName", Nil, List("value" -> "String")),

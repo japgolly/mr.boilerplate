@@ -6,16 +6,6 @@ import japgolly.univeq.UnivEq
 
 object InputParser {
 
-  //  def ClsDef[_: P] = {
-//    def ClsAnnot = P( `@` ~ SimpleType ~ ArgList.? )
-//    def Prelude = P( NotNewline ~ ( ClsAnnot.rep(1) ~ AccessMod.? | AccessMod) )
-//    def ClsArgMod = P( Mod.rep ~ (`val` | `var`) )
-//    def ClsArg = P( Annot.rep ~ ClsArgMod.? ~ Id ~ `:` ~ Type ~ (`=` ~ ExprCtx.Expr).? )
-//
-//    def ClsArgs = P( OneNLMax ~ "(" ~/ `implicit`.? ~ ClsArg.repTC() ~ ")" )
-//    P( `case`.? ~ `class` ~/ Id ~ TypeArgList.? ~~ Prelude.? ~~ ClsArgs.repX ~ DefTmpl.? )
-//  }
-
   private object Scala
     extends scalaparse.Core
       with scalaparse.Types
@@ -78,7 +68,7 @@ object InputParser {
 //      def TopStat = P( Pkg | Import | Tmpl )
 //      P( TopStat.repX(1, Semis) )
 //    }
-//    def TopPkgSeq[_: P] = P( ((`package` ~ QualId) ~~ !(WS ~ "{")).repX(1, Semis) )
+    def TopPkgSeq[_: P] = P( ((`package` ~ QualId) ~~ !(WS ~ "{")).repX(1, Semis) )
 //    def CompilationUnit[_: P]: P[Unit] = {
 //      def Body = P( TopPkgSeq ~~ (Semis ~ TopStatSeq).? | TopStatSeq )
 //      P( Semis.? ~ Body.? ~~ Semis.? ~ WL0 ~ End )
@@ -96,16 +86,26 @@ object InputParser {
           fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList)
     }
 
-  private def unrecognised[_: P]: P[Unrecognised] =
-    P((!cls ~~ AnyChar).repX.!.map(t => Unrecognised(t.trim)))
+  private def ignore[_: P]: P[Unit] =
+    P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment)
 
-  private def clsE[_: P]: P[Element] = cls.map(Right(_))
-  private def unrecognisedE[_: P]: P[Element] = unrecognised.map(Left(_))
+  private def recognised[_: P]: P[Option[Class]] =
+    P(cls.map(Some(_)) | ignore.map(_ => None))
+
+  private def unrecognised[_: P]: P[Unrecognised] =
+    P((!recognised ~~ AnyChar).repX.!.map(t => Unrecognised(t.trim)))
 
   type Element = Either[Unrecognised, Class]
 
+  private def recognisedE[_: P]: P[Element] =
+  // Left(Unrecognised("")) is a hack for Empty cos it will be filtered out below
+    recognised.map(_.fold[Element](Left(Unrecognised("")))(Right(_)))
+
+  private def unrecognisedE[_: P]: P[Element] =
+    unrecognised.map(Left(_))
+
   private def main[_: P]: P[Iterator[Element]] =
-    P((unrecognisedE ~ clsE).rep ~ unrecognisedE ~ End)
+    P((unrecognisedE ~ recognisedE).rep ~ unrecognisedE ~ End)
     .map(x => x._1.iterator.flatMap(y => y._1 :: y._2 :: Nil) ++ Iterator.single(x._2))
 
   def parse(t: String): List[Element] =
