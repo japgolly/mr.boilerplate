@@ -2,11 +2,13 @@ package japgolly.mrboilerplate.core.gen
 
 import japgolly.mrboilerplate.core.Cls
 import japgolly.mrboilerplate.core.StringUtils._
+import monocle.macros.Lenses
 
 object Circe extends Generator {
 
   override val title = "Circe"
 
+  @Lenses
   final case class Options(shortInstanceNames: Boolean,
                            singlesAsObjects: Boolean,
                            monadicObjects: Boolean)

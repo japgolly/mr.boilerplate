@@ -2,7 +2,6 @@ import sbt._
 import sbt.Keys._
 import com.typesafe.sbt.pgp.PgpKeys
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.sbtplugin.ScalaJSPlugin
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
 import sbtcrossproject.CrossPlugin.autoImport._
@@ -20,7 +19,9 @@ object Build {
   object Ver {
     final val BetterMonadicFor = "0.3.1"
     final val FastParse        = "2.1.3"
+    final val MacroParadise    = "2.1.1"
     final val Microlibs        = "1.22"
+    final val Monocle          = "1.5.0"
     final val MTest            = "0.6.9"
     final val Scala212         = "2.12.8"
     final val SJSReact         = "1.4.2"
@@ -61,6 +62,7 @@ object Build {
       libraryDependencies ++= Seq(
         "com.lihaoyi"                   %%% "utest"     % Ver.MTest,
         "com.github.japgolly.microlibs" %%% "test-util" % Ver.Microlibs),
+      addCompilerPlugin("org.scalamacros" % "paradise" % Ver.MacroParadise cross CrossVersion.full),
       addCompilerPlugin("com.olegpy" %% "better-monadic-for" % Ver.BetterMonadicFor))
       .configure(preventPublication))
 
@@ -77,11 +79,13 @@ object Build {
     .settings(
       moduleName := "core",
       libraryDependencies ++= Seq(
-        "com.lihaoyi"                   %%% "fastparse"  % Ver.FastParse,
-        "com.lihaoyi"                   %%% "scalaparse" % Ver.FastParse,
-        "com.github.japgolly.microlibs" %%% "stdlib-ext" % Ver.Microlibs,
-        "com.github.japgolly.microlibs" %%% "utils"      % Ver.Microlibs,
-        "com.github.japgolly.univeq"    %%% "univeq"     % Ver.UnivEq))
+        "com.lihaoyi"                   %%% "fastparse"     % Ver.FastParse,
+        "com.lihaoyi"                   %%% "scalaparse"    % Ver.FastParse,
+        "com.github.japgolly.microlibs" %%% "nonempty"      % Ver.Microlibs,
+        "com.github.japgolly.microlibs" %%% "stdlib-ext"    % Ver.Microlibs,
+        "com.github.japgolly.univeq"    %%% "univeq"        % Ver.UnivEq,
+        "com.github.julien-truffaut"    %%% "monocle-core"  % Ver.Monocle,
+        "com.github.julien-truffaut"    %%% "monocle-macro" % Ver.Monocle))
 
   lazy val webapp = project
     .in(file("webapp"))
@@ -91,7 +95,9 @@ object Build {
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %%% "extra" % Ver.SJSReact),
+        "com.github.japgolly.microlibs"     %%% "adt-macros"  % Ver.Microlibs,
+        "com.github.japgolly.scalajs-react" %%% "extra"       % Ver.SJSReact,
+        "com.github.japgolly.scalajs-react" %%% "ext-monocle" % Ver.SJSReact),
       emitSourceMaps := true,
       artifactPath in (Compile, fastOptJS) := (crossTarget.value / "mr-boilerplate.js"),
       artifactPath in (Compile, fullOptJS) := (crossTarget.value / "mr-boilerplate.js"))
