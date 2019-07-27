@@ -7,7 +7,7 @@ import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
 
-sealed trait GenDef {
+sealed trait GeneratorDef {
   val gen: Generator
   val enabledByDefault: Boolean
   def renderOptions(s: StateSnapshot[gen.Options]): VdomElement
@@ -17,15 +17,15 @@ sealed trait GenDef {
   val foldOptions: ((Circe.Options, UnivEqGen.Options)) => gen.Options
 }
 
-object GenDef {
+object GeneratorDef {
 
-  implicit def univEq: UnivEq[GenDef] = UnivEq.derive
+  implicit def univEq: UnivEq[GeneratorDef] = UnivEq.derive
 
-  val values = AdtMacros.adtValues[GenDef].sortBy(_.title)
+  val values = AdtMacros.adtValues[GeneratorDef].sortBy(_.title)
 
   // ===================================================================================================================
 
-  case object CirceDef extends GenDef {
+  case object CirceDef extends GeneratorDef {
     override val gen = Circe
 
     override val enabledByDefault = true
@@ -40,7 +40,7 @@ object GenDef {
       )
   }
 
-  case object UnivEqDef extends GenDef {
+  case object UnivEqDef extends GeneratorDef {
     override val gen = UnivEqGen
 
     override val enabledByDefault = false

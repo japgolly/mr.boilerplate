@@ -13,7 +13,7 @@ object Default {
        |final case class Roles[F[_], +A <: AnyRef](roles: F[A])
      """.stripMargin.trim
 
-  def options(g: GenDef): g.gen.Options =
+  def options(g: GeneratorDef): g.gen.Options =
     g.foldOptions((
 
       Circe.Options(

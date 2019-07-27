@@ -19,14 +19,14 @@ object GeneratorsComponent {
     Reusability.derive
 
   @Lenses
-  final case class State(enabled: Set[GenDef],
+  final case class State(enabled: Set[GeneratorDef],
                          options: List[Generator.AndOptions],
                          glopt: GlobalOptions) {
 
-    def toggle(gd: GenDef): State =
+    def toggle(gd: GeneratorDef): State =
       copy(if (enabled.contains(gd)) enabled - gd else enabled + gd)
 
-    def optionsFor(gd: GenDef): gd.gen.Options =
+    def optionsFor(gd: GeneratorDef): gd.gen.Options =
       options.iterator.map(_.unify(gd.gen)).filterDefined.nextOption().fold(Default.options(gd))(_.options)
 
     def setOption(o: Generator.AndOptions): State =
@@ -36,7 +36,7 @@ object GeneratorsComponent {
   object State {
     def init: State =
       apply(
-        enabled = GenDef.values.iterator.filter(_.enabledByDefault).toSet,
+        enabled = GeneratorDef.values.iterator.filter(_.enabledByDefault).toSet,
         options = Nil,
         glopt = Default.globalOptions)
 
@@ -46,7 +46,7 @@ object GeneratorsComponent {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    private def renderGen(gd: GenDef, s: StateSnapshot[State]): VdomElement = {
+    private def renderGen(gd: GeneratorDef, s: StateSnapshot[State]): VdomElement = {
       import gd.gen
       val enabled = s.value.enabled.contains(gd)
       val header =
@@ -74,12 +74,12 @@ object GeneratorsComponent {
         <.label("Output Options"),
         <.div(
           Styles.genBody,
-          GenDef.renderGlobalOptions(s.zoomStateL(State.glopt))))
+          GeneratorDef.renderGlobalOptions(s.zoomStateL(State.glopt))))
 
     def render(p: Props): VdomElement =
       <.section(
         Styles.genOuter,
-        <.div(GenDef.values.whole.map(renderGen(_, p.state)): _*))(
+        <.div(GeneratorDef.values.whole.map(renderGen(_, p.state)): _*))(
         renderGlobalOptions(p.state))
   }
 
