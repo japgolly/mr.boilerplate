@@ -1,4 +1,6 @@
-package japgolly.mrboilerplate.core
+package japgolly.mrboilerplate.core.gen
+
+import japgolly.mrboilerplate.core.Class
 
 trait Generator {
   type Options

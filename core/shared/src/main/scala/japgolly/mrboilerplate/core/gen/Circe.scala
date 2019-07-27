@@ -1,7 +1,8 @@
-package japgolly.mrboilerplate.core
+package japgolly.mrboilerplate.core.gen
+
+import japgolly.mrboilerplate.core.StringUtils._
 
 object Circe extends Generator {
-  import StringUtils._
 
   final case class Options(shortInstanceNames: Boolean,
                            singlesAsObjects: Boolean,
