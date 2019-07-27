@@ -10,7 +10,7 @@ object CirceTest extends TestSuite {
 
   private def assertGen(c: Cls, o: Circe.Options = Circe.defaultOptions)(expect: String*)
                        (implicit l: Line): Unit = {
-    val actual = Circe.generate(o)(c)
+    val actual = Circe.generate(c, o)
     assertSeq(actual, expect.map(_.trim))
   }
 
