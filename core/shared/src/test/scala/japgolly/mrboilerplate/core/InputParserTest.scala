@@ -38,10 +38,10 @@ object InputParserTest extends TestSuite {
         |String)case   class   Type  (v:T)
         |""".stripMargin
       assertParse(input)(
-        Class("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]")),
-        Class("Field", Nil, List("name" -> "FieldName", "typ" -> "Type")),
-        Class("FieldName", Nil, List("value" -> "String")),
-        Class("Type", Nil, List("v" -> "T")),
+        Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]")),
+        Cls("Field", Nil, List("name" -> "FieldName", "typ" -> "Type")),
+        Cls("FieldName", Nil, List("value" -> "String")),
+        Cls("Type", Nil, List("v" -> "T")),
       )
     }
 
@@ -52,7 +52,7 @@ object InputParserTest extends TestSuite {
         |class Poly[F[_], +A] private (val f: F[A])(implicit x: X) extends Omg[F, A, F]
         |""".stripMargin
       assertParse(input)(
-        Class(
+        Cls(
           "Poly",
           List("F[_]", "A"),
           List("f" -> "F[A]")),
@@ -78,11 +78,11 @@ object InputParserTest extends TestSuite {
         |""".stripMargin
       assertParse(input)(
         Unrecognised("asdfjhkasgdflkjsa"),
-        Class(
+        Cls(
           "TagOf",
           List("N"),
           List("tag" -> "String", "modifiers" -> "List[Seq[TagMod]]")),
-        Class(
+        Cls(
           "HtmlTagOf",
           List("N"),
           List("name" -> "String")),

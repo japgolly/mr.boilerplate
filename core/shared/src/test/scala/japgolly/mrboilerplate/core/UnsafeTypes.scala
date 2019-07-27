@@ -19,6 +19,6 @@ object UnsafeTypes {
   implicit def inputParserElementL(a: InputParser.Unrecognised): InputParser.Element =
     Left(a)
 
-  implicit def inputParserElementR(a: Class): InputParser.Element =
+  implicit def inputParserElementR(a: Cls): InputParser.Element =
     Right(a)
 }

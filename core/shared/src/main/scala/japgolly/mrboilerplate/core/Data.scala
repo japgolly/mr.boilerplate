@@ -3,7 +3,7 @@ package japgolly.mrboilerplate.core
 import StringUtils._
 import japgolly.univeq.UnivEq
 
-final case class Class(name: String, typeParams: List[Type], fields: List[Field]) {
+final case class Cls(name: String, typeParams: List[Type], fields: List[Field]) {
   override def toString: String = {
     val tp = if (typeParams.isEmpty) "" else typeParams.iterator.map(_.value).mkString("[", ", ", "]")
     val fs = fields.mkString("(", ", ", ")")
@@ -41,8 +41,8 @@ final case class Class(name: String, typeParams: List[Type], fields: List[Field]
     fields.map(_.name.quote).mkString(", ")
 }
 
-object Class {
-  implicit def univEq: UnivEq[Class] = UnivEq.derive
+object Cls {
+  implicit def univEq: UnivEq[Cls] = UnivEq.derive
 }
 
 final case class Field(name: FieldName, typ: Type) {

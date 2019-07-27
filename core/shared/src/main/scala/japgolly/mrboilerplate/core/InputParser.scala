@@ -77,10 +77,10 @@ object InputParser {
 
   // ===================================================================================================================
 
-  private def cls[_: P]: P[Class] =
+  private def cls[_: P]: P[Cls] =
     P(Scala.Mod.? ~ Scala.ClsDef).map {
       case (name, types, fields) =>
-        Class(
+        Cls(
           name       = name,
           typeParams = types.iterator.flatten.map(Type(_)).toList,
           fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList)
@@ -89,13 +89,13 @@ object InputParser {
   private def ignore[_: P]: P[Unit] =
     P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment)
 
-  private def recognised[_: P]: P[Option[Class]] =
+  private def recognised[_: P]: P[Option[Cls]] =
     P(cls.map(Some(_)) | ignore.map(_ => None))
 
   private def unrecognised[_: P]: P[Unrecognised] =
     P((!recognised ~~ AnyChar).repX.!.map(t => Unrecognised(t.trim)))
 
-  type Element = Either[Unrecognised, Class]
+  type Element = Either[Unrecognised, Cls]
 
   private def recognisedE[_: P]: P[Element] =
   // Left(Unrecognised("")) is a hack for Empty cos it will be filtered out below

@@ -8,7 +8,7 @@ object CirceTest extends TestSuite {
   import CoreTestUtil._
   import UnsafeTypes._
 
-  private def assertGen(c: Class, o: Circe.Options = Circe.defaultOptions)(expect: String*)
+  private def assertGen(c: Cls, o: Circe.Options = Circe.defaultOptions)(expect: String*)
                        (implicit l: Line): Unit = {
     val actual = Circe.generate(o)(c)
     assertSeq(actual, expect.map(_.trim))
@@ -17,7 +17,7 @@ object CirceTest extends TestSuite {
   override def tests = Tests {
 
     'mono0 - assertGen(
-      Class("Mono", Nil, Nil)
+      Cls("Mono", Nil, Nil)
     )(
       """
         |implicit val decoderMono: Decoder[Mono] =
@@ -29,7 +29,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'mono1 - assertGen(
-      Class("FieldName", Nil, List("value" -> "String"))
+      Cls("FieldName", Nil, List("value" -> "String"))
     )(
       """
         |implicit val decoderFieldName: Decoder[FieldName] =
@@ -41,7 +41,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'monoN - assertGen(
-      Class("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"))
+      Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"))
     )(
       """
         |implicit val decoderClass: Decoder[Class] =
@@ -53,7 +53,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'poly - assertGen(
-      Class("Poly", List("F[_, _[_]]", "A"), List("fa" -> "F[A]"))
+      Cls("Poly", List("F[_, _[_]]", "A"), List("fa" -> "F[A]"))
     )(
       """
         |implicit def decoderPoly[F[_, _[_]], A]: Decoder[Poly[F, A]] =
@@ -65,7 +65,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'short - assertGen(
-      Class("FieldName", Nil, List("value" -> "String")),
+      Cls("FieldName", Nil, List("value" -> "String")),
       Circe.defaultOptions.copy(shortInstanceNames = true)
     )(
       """
@@ -78,7 +78,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'flat1 - assertGen(
-      Class("FieldName", Nil, List("value" -> "String")),
+      Cls("FieldName", Nil, List("value" -> "String")),
       Circe.defaultOptions.copy(singlesAsObjects = false)
     )(
       """
@@ -91,7 +91,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'monadic - assertGen(
-      Class("X", Nil, List("a" -> "A", "b" -> "B")),
+      Cls("X", Nil, List("a" -> "A", "b" -> "B")),
       Circe.defaultOptions.copy(monadicObjects = true)
     )(
       """
