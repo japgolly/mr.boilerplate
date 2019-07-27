@@ -23,8 +23,8 @@ object Default {
     )
 
   def globalOptions = GlobalOptions(
-    shortInstanceNames = false,
-    generateCompanions = false,
+    shortInstanceNames = true,
+    generateCompanions = true,
   )
 
 }
