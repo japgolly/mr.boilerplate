@@ -4,8 +4,10 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.mrboilerplate.core.gen._
 import japgolly.mrboilerplate.webapp.DataReusability._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
+import monocle.macros.Lenses
 
 object GeneratorsComponent {
 
@@ -16,8 +18,10 @@ object GeneratorsComponent {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
+  @Lenses
   final case class State(enabled: Set[GenDef],
-                         options: List[Generator.AndOptions]) {
+                         options: List[Generator.AndOptions],
+                         glopt: GlobalOptions) {
 
     def toggle(gd: GenDef): State =
       copy(if (enabled.contains(gd)) enabled - gd else enabled + gd)
@@ -31,7 +35,10 @@ object GeneratorsComponent {
 
   object State {
     def init: State =
-      apply(GenDef.values.iterator.filter(_.enabledByDefault).toSet, Nil)
+      apply(
+        enabled = GenDef.values.iterator.filter(_.enabledByDefault).toSet,
+        options = Nil,
+        glopt = GlobalOptions.default)
 
     implicit def reusability: Reusability[State] =
       Reusability.byRef
@@ -62,10 +69,18 @@ object GeneratorsComponent {
         Option.when(enabled)(body))
     }
 
+    private def renderGlobalOptions(s: StateSnapshot[State]) =
+      <.div(
+        <.div("Output Options"),
+        <.div(
+          Styles.genBody,
+          GenDef.renderGlobalOptions(s.zoomStateL(State.glopt))))
+
     def render(p: Props): VdomElement =
       <.section(
         Styles.genOuter,
-        <.div(GenDef.values.whole.map(renderGen(_, p.state)): _*))
+        <.div(GenDef.values.whole.map(renderGen(_, p.state)): _*))(
+        renderGlobalOptions(p.state))
   }
 
   val Component = ScalaComponent.builder[Props]("GeneratorsComponent")

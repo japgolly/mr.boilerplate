@@ -10,7 +10,7 @@ trait Generator { self =>
 
   val defaultOptions: Options
 
-  def generate(c: Cls, o: Options): List[String]
+  def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String]
 
   final type AndOptions = Generator.AndOptions { val gen: self.type }
 

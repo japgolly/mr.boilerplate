@@ -2,7 +2,7 @@ package japgolly.mrboilerplate.webapp
 
 import monocle.Lens
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.mrboilerplate.core.gen.{Circe, Generator}
+import japgolly.mrboilerplate.core.gen.{Circe, Generator, GlobalOptions}
 import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
@@ -30,11 +30,17 @@ object GenDef {
 
     override def renderOptions(s: StateSnapshot[Circe.Options]) =
       <.div(
-        checkbox(s)(Circe.Options.shortInstanceNames, "Use short instance names"),
         checkbox(s)(Circe.Options.singlesAsObjects, "Encode single-field as single-key objects"),
         checkbox(s)(Circe.Options.monadicObjects, "Encode/decode objects monadically"),
       )
   }
+
+  // ===================================================================================================================
+
+  def renderGlobalOptions(s: StateSnapshot[GlobalOptions]) =
+    <.div(
+      checkbox(s)(GlobalOptions.shortInstanceNames, "Use short instance names"),
+    )
 
   // ===================================================================================================================
 

@@ -8,9 +8,12 @@ object CirceTest extends TestSuite {
   import CoreTestUtil._
   import UnsafeTypes._
 
-  private def assertGen(c: Cls, o: Circe.Options = Circe.defaultOptions)(expect: String*)
+  private def assertGen(cls: Cls,
+                        opt: Circe.Options = Circe.defaultOptions,
+                        glopt: GlobalOptions = GlobalOptions.default,
+                       )(expect: String*)
                        (implicit l: Line): Unit = {
-    val actual = Circe.generate(c, o)
+    val actual = Circe.generate(cls, opt, glopt)
     assertSeq(actual, expect.map(_.trim))
   }
 
@@ -66,7 +69,7 @@ object CirceTest extends TestSuite {
 
     'short - assertGen(
       Cls("FieldName", Nil, List("value" -> "String")),
-      Circe.defaultOptions.copy(shortInstanceNames = true)
+      glopt = GlobalOptions.default.copy(shortInstanceNames = true)
     )(
       """
         |implicit val decoder: Decoder[FieldName] =

@@ -9,20 +9,18 @@ object Circe extends Generator {
   override val title = "Circe"
 
   @Lenses
-  final case class Options(shortInstanceNames: Boolean,
-                           singlesAsObjects: Boolean,
+  final case class Options(singlesAsObjects: Boolean,
                            monadicObjects: Boolean)
 
   override val defaultOptions = Options(
-    shortInstanceNames = false,
-    singlesAsObjects   = true,
-    monadicObjects     = false)
+    singlesAsObjects = true,
+    monadicObjects   = false)
 
-  def generate(c: Cls, options: Options): List[String] = {
-    import c._
+  override def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
+    import cls._
 
     val suffix =
-      if (options.shortInstanceNames)
+      if (glopt.shortInstanceNames)
         ""
       else
         name.withHeadUpper
@@ -37,18 +35,18 @@ object Circe extends Generator {
       }
 
     val (decoderBody, encoderBody) =
-      c.fieldCount match {
+      fieldCount match {
         case 0 =>
           val d = s"Decoder.const($name())"
           val e = "Encoder.encodeUnit.contramap(_ => ())"
           (d, e)
 
-        case 1 if !options.singlesAsObjects =>
+        case 1 if !opt.singlesAsObjects =>
           val d = s"Decoder[${fields.head.typ}].map($apply)"
           val e = s"Encoder[${fields.head.typ}].contramap($unapply)"
           (d, e)
 
-        case _ if options.monadicObjects =>
+        case _ if opt.monadicObjects =>
           val gets = fields.map(f => s"      ${f.name.pad} <- c.get[${f.typ}](${f.name.quote})")
           val d =
             s"""

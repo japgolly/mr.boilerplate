@@ -54,9 +54,9 @@ object MainComponent {
       } yield {
         // TODO temp
         gen.enabled.iterator.flatMap { gd =>
-          val o = gen.optionsFor(gd.gen)
+          val opt = gen.optionsFor(gd.gen)
           classes.iterator.map { cls =>
-            gd.gen.generate(cls, o)
+            gd.gen.generate(cls, opt, gen.glopt)
           }
         }.toList
           .flatten.mkString("\n\n")
