@@ -52,16 +52,26 @@ object MainComponent {
         classes <- pxParsedOk
         gen     <- pxGen
       } yield {
-        // TODO temp
-        gen.enabled.iterator.flatMap { gd =>
-          val opt = gen.optionsFor(gd.gen)
-          classes.iterator.map { cls =>
-            gd.gen.generate(cls, opt, gen.glopt)
-          }
-        }.toList
-          .flatten.mkString("\n\n")
-      }
+        // TODO do this properly somewhere and test it
+        val glopt = gen.glopt
+        classes.iterator.map { cls =>
 
+          val decls =
+            gen.enabled.iterator.flatMap { gd =>
+              val opt = gen.optionsFor(gd.gen)
+              gd.gen.generate(cls, opt, glopt)
+            }.mkString("\n\n")
+
+          if (glopt.generateCompanions && decls.nonEmpty) {
+            s"""
+               |object ${cls.name} {
+               |${decls.indent(2)}
+               |}
+             """.stripMargin.trim
+          } else
+            decls
+        }.filter(_.nonEmpty).mkString("\n\n")
+      }
 
     def render(p: Props, s: State): VdomElement = {
       <.div(

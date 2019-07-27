@@ -40,6 +40,7 @@ object GenDef {
   def renderGlobalOptions(s: StateSnapshot[GlobalOptions]) =
     <.div(
       checkbox(s)(GlobalOptions.shortInstanceNames, "Use short instance names"),
+      checkbox(s)(GlobalOptions.generateCompanions, "Generate companion objects"),
     )
 
   // ===================================================================================================================
