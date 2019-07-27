@@ -11,6 +11,7 @@ object CirceTest extends TestSuite {
   private val circeOptions = Circe.Options(
     singlesAsObjects = true,
     monadicObjects = false,
+    keyConstants = false,
   )
 
   private val globalOptions = GlobalOptions(
@@ -125,5 +126,52 @@ object CirceTest extends TestSuite {
         |    )
         |  }
         |""".stripMargin)
+
+    'fieldKeysP - assertGen(
+      Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]")),
+      circeOptions.copy(keyConstants = true),
+      globalOptions.copy(shortInstanceNames = false)
+    )(
+      """
+        |private final val CirceKeyClassTypeParams = "typeParams"
+        |private final val CirceKeyClassFields     = "fields"
+        |""".stripMargin,
+      """
+        |implicit val decoderClass: Decoder[Class] =
+        |  Decoder.forProduct2(CirceKeyClassTypeParams, CirceKeyClassFields)(Class.apply)
+        |""".stripMargin,
+      """
+        |implicit val encoderClass: Encoder[Class] =
+        |  Encoder.forProduct2(CirceKeyClassTypeParams, CirceKeyClassFields)(a => (a.typeParams, a.fields))
+        |""".stripMargin)
+
+    'fieldKeysM - assertGen(
+      Cls("X", Nil, List("a" -> "A", "bee" -> "B")),
+      circeOptions.copy(monadicObjects = true, keyConstants = true),
+      globalOptions.copy(shortInstanceNames = true)
+    )(
+      """
+        |private final val CirceKeyA   = "a"
+        |private final val CirceKeyBee = "bee"
+        |""".stripMargin,
+      """
+        |implicit val decoder: Decoder[X] =
+        |  Decoder.instance { c =>
+        |    for {
+        |      a   <- c.get[A](CirceKeyA)
+        |      bee <- c.get[B](CirceKeyBee)
+        |    } yield X(a, bee)
+        |  }
+        |""".stripMargin,
+      """
+        |implicit val encoder: Encoder[X] =
+        |  Encoder.instance { value =>
+        |    Json.obj(
+        |      CirceKeyA   -> value.a.asJson,
+        |      CirceKeyBee -> value.bee.asJson,
+        |    )
+        |  }
+        |""".stripMargin)
+
   }
 }

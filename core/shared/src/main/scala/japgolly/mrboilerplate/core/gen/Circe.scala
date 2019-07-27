@@ -1,6 +1,6 @@
 package japgolly.mrboilerplate.core.gen
 
-import japgolly.mrboilerplate.core.Cls
+import japgolly.mrboilerplate.core.{Cls, FieldName}
 import japgolly.mrboilerplate.core.StringUtils._
 import monocle.macros.Lenses
 
@@ -10,7 +10,8 @@ object Circe extends Generator {
 
   @Lenses
   final case class Options(singlesAsObjects: Boolean,
-                           monadicObjects: Boolean)
+                           monadicObjects: Boolean,
+                           keyConstants: Boolean)
 
   override def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
     import cls._
@@ -27,8 +28,23 @@ object Circe extends Generator {
     val unapply =
       fields match {
         case f :: Nil => "_." + f.name
-        case fs => fs.map("a." + _.name).mkString("a => (", ", ", ")")
+        case fs       => fs.map("a." + _.name).mkString("a => (", ", ", ")")
       }
+
+    def mkKey(f: String) =
+      "CirceKey" + suffix + f.withHeadUpper
+
+    def quoteOrKey(f: FieldName) =
+      if (opt.keyConstants) mkKey(f.value) else f.quote
+
+    def quoteOrKeyPad(f: FieldName) =
+      if (opt.keyConstants) mkKey(f.pad) else f.quotePad
+
+    val fieldNameStrsOrKeys =
+      if (opt.keyConstants)
+        fields.map(f => mkKey(f.name.value)).mkString(", ")
+      else
+        fieldNameStrs
 
     val (decoderBody, encoderBody) =
       fieldCount match {
@@ -43,7 +59,7 @@ object Circe extends Generator {
           (d, e)
 
         case _ if opt.monadicObjects =>
-          val gets = fields.map(f => s"      ${f.name.pad} <- c.get[${f.typ}](${f.name.quote})")
+          val gets = fields.map(f => s"      ${f.name.pad} <- c.get[${f.typ}](${quoteOrKey(f.name)})")
           val d =
             s"""
                |Decoder.instance { c =>
@@ -52,7 +68,7 @@ object Circe extends Generator {
                |    } yield $name($fieldNames)
                |  }
                |""".stripMargin.trim
-          val sets = fields.map(f => s"      ${f.name.quotePad} -> value.${f.name}.asJson,")
+          val sets = fields.map(f => s"      ${quoteOrKeyPad(f.name)} -> value.${f.name}.asJson,")
           val e =
             s"""
                |Encoder.instance { value =>
@@ -64,8 +80,8 @@ object Circe extends Generator {
           (d, e)
 
         case _ =>
-          val d = s"Decoder.forProduct${fields.size}($fieldNameStrs)($apply)"
-          val e = s"Encoder.forProduct${fields.size}($fieldNameStrs)($unapply)"
+          val d = s"Decoder.forProduct${fields.size}($fieldNameStrsOrKeys)($apply)"
+          val e = s"Encoder.forProduct${fields.size}($fieldNameStrsOrKeys)($unapply)"
           (d, e)
       }
 
@@ -81,7 +97,11 @@ object Circe extends Generator {
          |  $encoderBody
          |""".stripMargin.trim
 
-    decoder :: encoder :: Nil
+    if (opt.keyConstants) {
+      val keys = fields.iterator.map(f => s"private final val ${mkKey(f.name.pad)} = ${f.name.quote}").mkString("\n")
+      keys :: decoder :: encoder :: Nil
+    } else
+      decoder :: encoder :: Nil
 
   }
 }

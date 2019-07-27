@@ -35,7 +35,8 @@ object GenDef {
     override def renderOptions(s: StateSnapshot[Circe.Options]) =
       <.div(
         checkbox(s)(Circe.Options.singlesAsObjects, "Encode single-field as single-key objects"),
-        checkbox(s)(Circe.Options.monadicObjects, "Encode/decode objects monadically"),
+        checkbox(s)(Circe.Options.monadicObjects  , "Monadic object codecs"),
+        checkbox(s)(Circe.Options.keyConstants    , "Constants for object keys"),
       )
   }
 

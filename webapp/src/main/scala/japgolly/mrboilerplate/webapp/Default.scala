@@ -19,6 +19,7 @@ object Default {
       Circe.Options(
         singlesAsObjects = true,
         monadicObjects = false,
+        keyConstants = false,
       ),
     )
 
