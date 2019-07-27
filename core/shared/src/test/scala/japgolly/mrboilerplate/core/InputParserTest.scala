@@ -5,7 +5,8 @@ import utest._
 
 object InputParserTest extends TestSuite {
   import CoreTestUtil._
-  import InputParser.{Element, Unrecognised}
+  import InputParser.Element
+  import InputParser.Element.Unrecognised
   import UnsafeTypes._
 
   private def assertParse(input: String)(expect: Element*)(implicit l: Line): Unit = {
@@ -87,6 +88,23 @@ object InputParserTest extends TestSuite {
           List("N"),
           List("name" -> "String")),
         Unrecognised("def a"),
+      )
+    }
+
+    'crash - {
+      val input =
+        """
+          |sealed trait Event
+          |
+          |/** what? */
+          |sealed trait ActiveEvent extends Event
+          |
+          |case class X(i: Int) extends ActiveEvent
+        """.stripMargin
+      assertParse(input)(
+        Unrecognised("sealed trait Event"),
+        Unrecognised("sealed trait ActiveEvent extends Event"),
+        Cls("X", Nil, List("i" -> "Int"))
       )
     }
 

@@ -1,7 +1,7 @@
 package japgolly.mrboilerplate.core
 
 import fastparse._
-import fastparse.ScalaWhitespace._
+import fastparse.MultiLineWhitespace._
 import japgolly.univeq.UnivEq
 
 object InputParser {
@@ -77,44 +77,61 @@ object InputParser {
 
   // ===================================================================================================================
 
-  private def cls[_: P]: P[Cls] =
+  private def cls[_: P]: P[Element] =
     P(Scala.Mod.? ~ Scala.ClsDef).map {
       case (name, types, fields) =>
-        Cls(
+        Element.Class(Cls(
           name       = name,
           typeParams = types.iterator.flatten.map(Type(_)).toList,
-          fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList)
+          fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList))
     }
 
   private def ignore[_: P]: P[Unit] =
     P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment)
 
-  private def recognised[_: P]: P[Option[Cls]] =
-    P(cls.map(Some(_)) | ignore.map(_ => None))
+  private def recognised[_: P]: P[Element] =
+    P(cls | ignore.rep(1).map(_ => Element.Empty))
+//    P(cls | ignore.rep(1).!.map{s =>
+//      println(s"Ignoring: [${s.replace("\n", "\\n")}]")
+//      Element.Empty})
 
-  private def unrecognised[_: P]: P[Unrecognised] =
-    P((!recognised ~~ AnyChar).repX.!.map(t => Unrecognised(t.trim)))
-
-  type Element = Either[Unrecognised, Cls]
-
-  private def recognisedE[_: P]: P[Element] =
-  // Left(Unrecognised("")) is a hack for Empty cos it will be filtered out below
-    recognised.map(_.fold[Element](Left(Unrecognised("")))(Right(_)))
-
-  private def unrecognisedE[_: P]: P[Element] =
-    unrecognised.map(Left(_))
+  private def unrecognised[_: P]: P[Element] =
+    P((!recognised ~~ (CharPred(_.isWhitespace) | CharsWhile(!_.isWhitespace))).rep.!.map(t => Element.Unrecognised(t.trim)))
 
   private def main[_: P]: P[Iterator[Element]] =
-    P((unrecognisedE ~ recognisedE).rep ~ unrecognisedE ~ End)
+    P((unrecognised ~ recognised).rep ~ unrecognised ~ End)
     .map(x => x._1.iterator.flatMap(y => y._1 :: y._2 :: Nil) ++ Iterator.single(x._2))
 
-  def parse(t: String): List[Element] =
-    fastparse.parse(t, main(_))
-      .get
-      .value
-      .filterNot(_.left.exists(_.text.isEmpty))
-      .toList
+  // ===================================================================================================================
 
-  final case class Unrecognised(text: String)
-  implicit def univEqUnrecognised: UnivEq[Unrecognised] = UnivEq.derive
+  def parse(t: String): List[Element] =
+    fastparse.parse(t, main(_)) match {
+      case Parsed.Success(value, _) =>
+        value
+          .filter {
+            case Element.Empty           => false
+            case _: Element.Class        => true
+            case u: Element.Unrecognised => u.text.nonEmpty
+          }
+          .toList
+      case f: Parsed.Failure =>
+        System.err.println(f.trace().longMsg)
+        Element.Unrecognised(t) :: Nil
+    }
+
+  sealed trait Element {
+    final def success: Option[Cls] = this match {
+      case Element.Class(cls)        => Some(cls)
+      case Element.Unrecognised(_)
+         | Element.Empty             => None
+    }
+  }
+  object Element {
+    case object Empty extends Element
+    final case class Unrecognised(text: String) extends Element
+    final case class Class(value: Cls) extends Element
+
+    implicit def univEqUnrecognised: UnivEq[Unrecognised] = UnivEq.derive
+    implicit def univEq: UnivEq[Element] = UnivEq.derive
+  }
 }
