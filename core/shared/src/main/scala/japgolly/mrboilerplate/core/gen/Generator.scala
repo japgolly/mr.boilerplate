@@ -8,8 +8,6 @@ trait Generator { self =>
 
   val title: String
 
-  val defaultOptions: Options
-
   def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String]
 
   final type AndOptions = Generator.AndOptions { val gen: self.type }

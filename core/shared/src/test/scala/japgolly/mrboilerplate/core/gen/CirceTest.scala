@@ -8,9 +8,19 @@ object CirceTest extends TestSuite {
   import CoreTestUtil._
   import UnsafeTypes._
 
+  private val circeOptions = Circe.Options(
+    singlesAsObjects = true,
+    monadicObjects = false,
+  )
+
+  private val globalOptions = GlobalOptions(
+    shortInstanceNames = false,
+    generateCompanions = false,
+  )
+
   private def assertGen(cls: Cls,
-                        opt: Circe.Options = Circe.defaultOptions,
-                        glopt: GlobalOptions = GlobalOptions.default,
+                        opt: Circe.Options = circeOptions,
+                        glopt: GlobalOptions = globalOptions,
                        )(expect: String*)
                        (implicit l: Line): Unit = {
     val actual = Circe.generate(cls, opt, glopt)
@@ -69,7 +79,7 @@ object CirceTest extends TestSuite {
 
     'short - assertGen(
       Cls("FieldName", Nil, List("value" -> "String")),
-      glopt = GlobalOptions.default.copy(shortInstanceNames = true)
+      glopt = globalOptions.copy(shortInstanceNames = true)
     )(
       """
         |implicit val decoder: Decoder[FieldName] =
@@ -82,7 +92,7 @@ object CirceTest extends TestSuite {
 
     'flat1 - assertGen(
       Cls("FieldName", Nil, List("value" -> "String")),
-      Circe.defaultOptions.copy(singlesAsObjects = false)
+      circeOptions.copy(singlesAsObjects = false)
     )(
       """
         |implicit val decoderFieldName: Decoder[FieldName] =
@@ -95,7 +105,7 @@ object CirceTest extends TestSuite {
 
     'monadic - assertGen(
       Cls("X", Nil, List("a" -> "A", "bee" -> "B")),
-      Circe.defaultOptions.copy(monadicObjects = true)
+      circeOptions.copy(monadicObjects = true)
     )(
       """
         |implicit val decoderX: Decoder[X] =

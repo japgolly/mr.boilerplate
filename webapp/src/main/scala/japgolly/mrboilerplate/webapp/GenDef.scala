@@ -13,6 +13,8 @@ sealed trait GenDef {
   def renderOptions(s: StateSnapshot[gen.Options]): VdomElement
 
   final def title = gen.title
+
+  val foldOptions: (=> Circe.Options) => gen.Options
 }
 
 object GenDef {
@@ -27,6 +29,8 @@ object GenDef {
     override val gen = Circe
 
     override val enabledByDefault = true
+
+    override val foldOptions = o => o
 
     override def renderOptions(s: StateSnapshot[Circe.Options]) =
       <.div(

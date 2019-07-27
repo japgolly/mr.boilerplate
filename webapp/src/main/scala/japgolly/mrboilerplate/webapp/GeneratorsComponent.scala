@@ -26,8 +26,8 @@ object GeneratorsComponent {
     def toggle(gd: GenDef): State =
       copy(if (enabled.contains(gd)) enabled - gd else enabled + gd)
 
-    def optionsFor(g: Generator): g.Options =
-      options.iterator.map(_.unify(g)).filterDefined.nextOption().fold(g.defaultOptions)(_.options)
+    def optionsFor(gd: GenDef): gd.gen.Options =
+      options.iterator.map(_.unify(gd.gen)).filterDefined.nextOption().fold(Default.options(gd))(_.options)
 
     def setOption(o: Generator.AndOptions): State =
       copy(options = o :: options.filterNot(_.gen eq o.gen))
@@ -38,7 +38,7 @@ object GeneratorsComponent {
       apply(
         enabled = GenDef.values.iterator.filter(_.enabledByDefault).toSet,
         options = Nil,
-        glopt = GlobalOptions.default)
+        glopt = Default.globalOptions)
 
     implicit def reusability: Reusability[State] =
       Reusability.byRef
@@ -59,7 +59,7 @@ object GeneratorsComponent {
 
       def body: VdomElement = {
         val optionState: StateSnapshot[gen.Options] =
-          s.zoomState(_.optionsFor(gen))(o => _.setOption(gen.andOptions(o)))
+          s.zoomState(_.optionsFor(gd))(o => _.setOption(gen.andOptions(o)))
         <.div(
           Styles.genBody,
           gd.renderOptions(optionState))

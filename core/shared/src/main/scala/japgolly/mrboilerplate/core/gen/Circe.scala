@@ -12,10 +12,6 @@ object Circe extends Generator {
   final case class Options(singlesAsObjects: Boolean,
                            monadicObjects: Boolean)
 
-  override val defaultOptions = Options(
-    singlesAsObjects = true,
-    monadicObjects   = false)
-
   override def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
     import cls._
 

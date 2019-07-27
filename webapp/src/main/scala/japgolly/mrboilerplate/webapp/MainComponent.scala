@@ -23,19 +23,10 @@ object MainComponent {
   object State {
 
     def init = apply(
-      input = initialInput,
+      input = Default.input,
       gen   = GeneratorsComponent.State.init,
     )
   }
-
-  private def initialInput =
-    s"""
-       |case class Person(name   : PersonName,
-       |                  address: Address,
-       |                  phone  : Option[PhoneNumber])
-       |
-       |final case class Roles[F[_], +A <: AnyRef](roles: F[A])
-     """.stripMargin.trim
 
   final class Backend($: BackendScope[Props, State]) {
 
@@ -58,7 +49,7 @@ object MainComponent {
 
           val decls =
             gen.enabled.iterator.flatMap { gd =>
-              val opt = gen.optionsFor(gd.gen)
+              val opt = gen.optionsFor(gd)
               gd.gen.generate(cls, opt, glopt)
             }.mkString("\n\n")
 
