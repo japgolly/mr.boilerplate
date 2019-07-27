@@ -91,5 +91,8 @@ object Build {
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %%% "extra" % Ver.SJSReact))
+        "com.github.japgolly.scalajs-react" %%% "extra" % Ver.SJSReact),
+      emitSourceMaps := true,
+      artifactPath in (Compile, fastOptJS) := (crossTarget.value / "mr-boilerplate.js"),
+      artifactPath in (Compile, fullOptJS) := (crossTarget.value / "mr-boilerplate.js"))
 }

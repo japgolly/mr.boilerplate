@@ -1,0 +1,24 @@
+#!/bin/bash
+cd "$(dirname "$0")/.." || exit 1
+src="$(pwd)"
+tgt=/tmp/mr-boilerplate-serve
+[ ! -e $tgt ] && mkdir $tgt
+set -euo pipefail
+cd $tgt
+
+
+function link {
+  f=$(basename $1)
+  [ -e $f ] && rm -f $f
+  ln -s "$src/$1" $f
+}
+
+link bin/serve.py
+link webapp/src/main/html/index.html
+link webapp/target/scala-2.12/mr-boilerplate.js
+link webapp/target/scala-2.12/mr-boilerplate.js.map
+
+echo "> ls -la $tgt"
+ls -la
+
+exec python3 serve.py
