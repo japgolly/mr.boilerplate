@@ -49,7 +49,7 @@ object Circe extends Generator {
           (d, e)
 
         case _ if options.monadicObjects =>
-          val gets = fields.map(f => s"      ${f.name} <- c.get[${f.typ}](${f.name.quote})")
+          val gets = fields.map(f => s"      ${f.name.pad} <- c.get[${f.typ}](${f.name.quote})")
           val d =
             s"""
                |Decoder.instance { c =>
@@ -58,7 +58,7 @@ object Circe extends Generator {
                |    } yield $name($fieldNames)
                |  }
                |""".stripMargin.trim
-          val sets = fields.map(f => s"      ${f.name.quote} -> value.${f.name}.asJson,")
+          val sets = fields.map(f => s"      ${f.name.quotePad} -> value.${f.name}.asJson,")
           val e =
             s"""
                |Encoder.instance { value =>

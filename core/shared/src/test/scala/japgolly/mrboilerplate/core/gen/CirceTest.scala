@@ -91,24 +91,24 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'monadic - assertGen(
-      Cls("X", Nil, List("a" -> "A", "b" -> "B")),
+      Cls("X", Nil, List("a" -> "A", "bee" -> "B")),
       Circe.defaultOptions.copy(monadicObjects = true)
     )(
       """
         |implicit val decoderX: Decoder[X] =
         |  Decoder.instance { c =>
         |    for {
-        |      a <- c.get[A]("a")
-        |      b <- c.get[B]("b")
-        |    } yield X(a, b)
+        |      a   <- c.get[A]("a")
+        |      bee <- c.get[B]("bee")
+        |    } yield X(a, bee)
         |  }
         |""".stripMargin,
       """
         |implicit val encoderX: Encoder[X] =
         |  Encoder.instance { value =>
         |    Json.obj(
-        |      "a" -> value.a.asJson,
-        |      "b" -> value.b.asJson,
+        |      "a"   -> value.a.asJson,
+        |      "bee" -> value.bee.asJson,
         |    )
         |  }
         |""".stripMargin)
