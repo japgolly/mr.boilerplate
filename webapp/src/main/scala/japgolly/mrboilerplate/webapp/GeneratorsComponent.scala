@@ -71,7 +71,7 @@ object GeneratorsComponent {
 
     private def renderGlobalOptions(s: StateSnapshot[State]) =
       <.div(
-        <.div("Output Options"),
+        <.label("Output Options"),
         <.div(
           Styles.genBody,
           GenDef.renderGlobalOptions(s.zoomStateL(State.glopt))))
