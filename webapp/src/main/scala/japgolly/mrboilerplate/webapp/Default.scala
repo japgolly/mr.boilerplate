@@ -14,14 +14,19 @@ object Default {
      """.stripMargin.trim
 
   def options(g: GenDef): g.gen.Options =
-    g.foldOptions(
+    g.foldOptions((
 
       Circe.Options(
         singlesAsObjects = true,
         monadicObjects = false,
         keyConstants = false,
       ),
-    )
+
+      UnivEqGen.Options(
+        oneLine = false,
+      ),
+
+    ))
 
   def globalOptions = GlobalOptions(
     shortInstanceNames = true,

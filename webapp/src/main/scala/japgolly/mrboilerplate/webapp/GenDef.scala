@@ -2,7 +2,7 @@ package japgolly.mrboilerplate.webapp
 
 import monocle.Lens
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.mrboilerplate.core.gen.{Circe, Generator, GlobalOptions}
+import japgolly.mrboilerplate.core.gen._
 import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
@@ -14,7 +14,7 @@ sealed trait GenDef {
 
   final def title = gen.title
 
-  val foldOptions: (=> Circe.Options) => gen.Options
+  val foldOptions: ((Circe.Options, UnivEqGen.Options)) => gen.Options
 }
 
 object GenDef {
@@ -30,13 +30,26 @@ object GenDef {
 
     override val enabledByDefault = true
 
-    override val foldOptions = o => o
+    override val foldOptions = _._1
 
     override def renderOptions(s: StateSnapshot[Circe.Options]) =
       <.div(
         checkbox(s)(Circe.Options.singlesAsObjects, "Encode single-field as single-key objects"),
         checkbox(s)(Circe.Options.monadicObjects  , "Monadic object codecs"),
         checkbox(s)(Circe.Options.keyConstants    , "Constants for object keys"),
+      )
+  }
+
+  case object UnivEqDef extends GenDef {
+    override val gen = UnivEqGen
+
+    override val enabledByDefault = false
+
+    override val foldOptions = _._2
+
+    override def renderOptions(s: StateSnapshot[UnivEqGen.Options]) =
+      <.div(
+        checkbox(s)(UnivEqGen.Options.oneLine, "One-liners"),
       )
   }
 
