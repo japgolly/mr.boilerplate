@@ -27,5 +27,6 @@ done
 git status
 
 echo "git commit -m 'Update gh-pages'"
+echo "git commit -m 'Update gh-pages' && git push && git checkout master"
 echo
 
