@@ -24,6 +24,9 @@ object DataReusability {
   implicit def reusabilityCls: Reusability[Cls] =
     byRefOrUnivEq
 
+  implicit def reusabilityInputParserUnrecognised: Reusability[InputParser.Element.Unrecognised] =
+    byRefOrUnivEq
+
   implicit def reusabilityInputParserElement: Reusability[InputParser.Element] =
     byRefOrUnivEq
 

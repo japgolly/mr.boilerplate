@@ -125,13 +125,18 @@ object InputParser {
       case Element.Unrecognised(_)
          | Element.Empty             => None
     }
+    final def failure: Option[Element.Unrecognised] = this match {
+      case u: Element.Unrecognised => Some(u)
+      case _: Element.Class
+         | Element.Empty           => None
+    }
   }
   object Element {
     case object Empty extends Element
     final case class Unrecognised(text: String) extends Element
     final case class Class(value: Cls) extends Element
 
-    implicit def univEqUnrecognised: UnivEq[Unrecognised] = UnivEq.derive
+    implicit def univEqU: UnivEq[Unrecognised] = UnivEq.derive
     implicit def univEq: UnivEq[Element] = UnivEq.derive
   }
 }

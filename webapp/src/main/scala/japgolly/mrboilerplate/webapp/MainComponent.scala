@@ -36,11 +36,12 @@ object MainComponent {
     private val pxInput    = Px.state($).map(_.input).withReuse.autoRefresh
     private val pxGen      = Px.state($).map(_.gen).withReuse.autoRefresh
     private val pxParsed   = pxInput.map(InputParser.parse).withReuse
-    private val pxParsedOk = pxParsed.map(_.iterator.map(_.success).filterDefined.to[ListSet]).withReuse
+    private val pxParsedOK = pxParsed.map(_.iterator.map(_.success).filterDefined.to[ListSet]).withReuse
+    private val pxParsedKO = pxParsed.map(_.iterator.map(_.failure).filterDefined.to[List]).withReuse
 
     private val pxOutput =
       for {
-        classes <- pxParsedOk
+        classes <- pxParsedOK
         gen     <- pxGen
       } yield {
         // TODO do this properly somewhere and test it
@@ -69,7 +70,7 @@ object MainComponent {
         Styles.mainOuter,
         InputComponent.Props(inputSS(s)).render,
         GeneratorsComponent.Props(genSS(s)).render,
-        OutputComponent.Props(pxOutput.value()).render,
+        OutputComponent.Props(pxParsedKO.value(), pxOutput.value()).render,
       )
     }
   }

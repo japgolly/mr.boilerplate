@@ -13,7 +13,7 @@ object Default {
        |final case class NonEmptyList[A](head: A, tail: List[A])
        |
        |final case class Roles[F[_], +A <: AnyRef](roles: F[A])
-     """.stripMargin.trim
+     """.stripMargin.trim + "\n"
 
   def options(g: GeneratorDef): g.gen.Options =
     g.foldOptions((
