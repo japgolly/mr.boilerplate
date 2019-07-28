@@ -15,9 +15,13 @@ object OutputComponent {
   private def render(p: Props): VdomElement =
     <.section(
       Styles.outputOuter,
-      ^.overflow.auto,
+      ^.display.flex,
+      ^.flexDirection.column,
       <.header(Styles.header, "Output"),
-      Highlight(p.output))
+      <.div(
+        ^.overflow.auto,
+        ^.flexGrow := "1",
+        Highlight(p.output)))
 
   val Component = ScalaComponent.builder[Props]("OutputComponent")
     .render_P(render)
