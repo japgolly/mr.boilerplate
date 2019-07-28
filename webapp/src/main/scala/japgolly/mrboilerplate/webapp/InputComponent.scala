@@ -18,9 +18,16 @@ object InputComponent {
     def render(p: Props): VdomElement =
       <.section(
         Styles.inputOuter,
+        ^.cls := "form-group",
         <.header(Styles.header, "Input"),
         <.textarea(
-          Styles.inputTextarea,
+          ^.cls := "form-control",
+          ^.width := "100%",
+          ^.height := "calc(100% - 2em)",
+          ^.fontFamily := "monospace",
+          ^.backgroundColor := "#eee",
+          ^.color := "#000",
+          ^.overflow.auto,
           ^.autoFocus := true,
           ^.value := p.text.value,
           onChange))

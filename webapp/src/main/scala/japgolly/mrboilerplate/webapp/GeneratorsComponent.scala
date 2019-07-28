@@ -46,6 +46,8 @@ object GeneratorsComponent {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
+    private val bodyBase = <.div(^.paddingLeft := "4ex")
+
     private def renderGen(gd: GeneratorDef, s: StateSnapshot[State]): VdomElement = {
       import gd.gen
       val enabled = s.value.enabled.contains(gd)
@@ -60,12 +62,11 @@ object GeneratorsComponent {
       def body: VdomElement = {
         val optionState: StateSnapshot[gen.Options] =
           s.zoomState(_.optionsFor(gd))(o => _.setOption(gen.andOptions(o)))
-        <.div(
-          Styles.genBody,
+        bodyBase(
           gd.renderOptions(optionState))
       }
       <.div(
-        Styles.genBlock,
+        ^.marginBottom := "1em",
         header,
         Option.when(enabled)(body))
     }
@@ -73,8 +74,7 @@ object GeneratorsComponent {
     private def renderGlobalOptions(s: StateSnapshot[State]) =
       <.div(
         <.label("Output Options"),
-        <.div(
-          Styles.genBody,
+        bodyBase(
           GeneratorDef.renderGlobalOptions(s.zoomStateL(State.glopt))))
 
     def render(p: Props): VdomElement =

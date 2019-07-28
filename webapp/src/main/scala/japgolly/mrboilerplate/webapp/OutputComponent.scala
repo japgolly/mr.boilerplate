@@ -15,6 +15,7 @@ object OutputComponent {
   private def render(p: Props): VdomElement =
     <.section(
       Styles.outputOuter,
+      ^.overflow.auto,
       <.header(Styles.header, "Output"),
       Highlight(p.output))
 

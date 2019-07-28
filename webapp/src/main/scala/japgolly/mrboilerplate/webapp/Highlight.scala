@@ -13,7 +13,9 @@ object Highlight {
     val html = js.Dynamic.global.hljs.highlight("scala", input, true).value.asInstanceOf[String]
     <.pre(
       ^.cls := "hljs scala",
-      Styles.highlight,
+      ^.height := "100%",
+      ^.margin := "0",
+      ^.borderRadius := "4px",
       <.code(
         ^.dangerouslySetInnerHtml := html))
   }

@@ -2,10 +2,11 @@ package japgolly.mrboilerplate.webapp
 
 import japgolly.scalajs.react.vdom.html_<^._
 
+/** Not all styles, just shared ones */
 object Styles {
 
-  private final val gridInput = "i"
-  private final val gridGen = "g"
+  private final val gridInput  = "i"
+  private final val gridGen    = "g"
   private final val gridOutput = "o"
 
   val mainOuter = TagMod(
@@ -24,47 +25,9 @@ object Styles {
     ^.height := "100vh",
   )
 
-  val inputOuter = TagMod(
-    ^.gridArea := gridInput,
-    ^.cls := "form-group",
-  )
-
-  val inputTextarea = TagMod(
-    ^.width := "100%",
-    ^.height := "calc(100% - 2em)",
-    ^.cls := "form-control",
-    ^.fontFamily := "monospace",
-    ^.backgroundColor := "#eee",
-    ^.color := "#000",
-    ^.overflow.auto,
-  )
-
-  val genOuter = TagMod(
-    ^.gridArea := gridGen,
-  )
-
-  val genBlock = TagMod(
-    ^.marginBottom := "1em",
-  )
-
-  val genOptionRow = TagMod(
-    ^.marginTop := "0.1em",
-  )
-
-  val genBody = TagMod(
-    ^.paddingLeft := "4ex",
-  )
-
-  val outputOuter = TagMod(
-    ^.gridArea := gridOutput,
-    ^.overflow.auto,
-  )
-
-  val highlight = TagMod(
-    ^.borderRadius := "4px",
-    ^.height := "calc(100% - 2em - 15px)",
-    ^.margin := "0",
-  )
+  val inputOuter  = ^.gridArea := gridInput
+  val genOuter    = ^.gridArea := gridGen
+  val outputOuter = ^.gridArea := gridOutput
 
   val header = TagMod(
     ^.fontSize := "150%",
