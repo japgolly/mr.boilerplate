@@ -9,15 +9,17 @@ object Styles {
   private final val gridGen    = "g"
   private final val gridOutput = "o"
 
+  private val hpad = "1em"
+
   val mainOuter = TagMod(
     ^.display.grid,
     ^.gridTemplateAreas(
       s"$gridInput $gridOutput",
       s"$gridGen   $gridOutput",
     ),
-    ^.gridTemplateColumns := "1fr 1fr",
+    ^.gridTemplateColumns := s"calc(50% - $hpad) calc(50% - $hpad)",
     ^.gridTemplateRows := "1fr auto",
-    ^.padding := "0.5em 1em 1em 1em",
+    ^.padding := s"0.5em $hpad 1em $hpad",
     ^.gridGap := "1.5em",
     ^.minHeight := "100vh",
     ^.maxHeight := "100vh",
