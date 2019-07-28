@@ -145,12 +145,10 @@ object CirceTest extends TestSuite {
         |""".stripMargin,
       """
         |implicit val encoderX: Encoder[X] =
-        |  Encoder.instance { value =>
-        |    Json.obj(
-        |      "a"   -> value.a.asJson,
-        |      "bee" -> value.bee.asJson,
-        |    )
-        |  }
+        |  Encoder.instance(value => Json.obj(
+        |    "a"   -> value.a.asJson,
+        |    "bee" -> value.bee.asJson,
+        |  ))
         |""".stripMargin)
 
     'fieldKeysP - assertGen(
@@ -191,12 +189,10 @@ object CirceTest extends TestSuite {
         |""".stripMargin,
       """
         |implicit val encoder: Encoder[X] =
-        |  Encoder.instance { value =>
-        |    Json.obj(
-        |      CirceKeyA   -> value.a.asJson,
-        |      CirceKeyBee -> value.bee.asJson,
-        |    )
-        |  }
+        |  Encoder.instance(value => Json.obj(
+        |    CirceKeyA   -> value.a.asJson,
+        |    CirceKeyBee -> value.bee.asJson,
+        |  ))
         |""".stripMargin)
   }
 }

@@ -68,14 +68,12 @@ object Circe extends Generator {
                |    } yield $name($fieldNames)
                |  }
                |""".stripMargin.trim
-          val sets = fields.map(f => s"      ${quoteOrKeyPad(f.name)} -> value.${f.name}.asJson,")
+          val sets = fields.map(f => s"    ${quoteOrKeyPad(f.name)} -> value.${f.name}.asJson,")
           val e =
             s"""
-               |Encoder.instance { value =>
-               |    Json.obj(
+               |Encoder.instance(value => Json.obj(
                |${sets.mkString("\n")}
-               |    )
-               |  }
+               |  ))
                |""".stripMargin.trim
           (d, e)
 
