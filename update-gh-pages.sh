@@ -16,6 +16,11 @@ sbt webapp/fullOptJS
 
 for f in ${files[@]}; do
   cp $f .
+done
+
+sed -i '/!-- REACT.DEV/,/!-- REACT.PROD/d; /REACT.END --/d' index.html
+
+for f in ${files[@]}; do
   git add $(basename $f)
 done
 
