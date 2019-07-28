@@ -65,6 +65,7 @@ object GeneratorsComponent {
           gd.renderOptions(optionState))
       }
       <.div(
+        Styles.genBlock,
         header,
         Option.when(enabled)(body))
     }
@@ -79,6 +80,7 @@ object GeneratorsComponent {
     def render(p: Props): VdomElement =
       <.section(
         Styles.genOuter,
+        <.header(Styles.header, "Generators & Config"),
         <.div(GeneratorDef.values.whole.map(renderGen(_, p.state)): _*))(
         renderGlobalOptions(p.state))
   }

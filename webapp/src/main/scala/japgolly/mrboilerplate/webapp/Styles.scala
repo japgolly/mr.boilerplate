@@ -16,8 +16,9 @@ object Styles {
     ),
     ^.gridTemplateColumns := "1fr 1fr",
     ^.gridTemplateRows := "1fr auto",
-    ^.padding := "1em",
-    ^.gridGap := "1em",
+    ^.padding := "0.5em 1em 1em 1em",
+    ^.gridColumnGap := "1.5em",
+    ^.gridRowGap := "2.2em",
     ^.minHeight := "100vh",
     ^.maxHeight := "100vh",
     ^.height := "100vh",
@@ -30,7 +31,7 @@ object Styles {
 
   val inputTextarea = TagMod(
     ^.width := "100%",
-    ^.height := "100%",
+    ^.height := "calc(100% - 2em)",
     ^.cls := "form-control",
     ^.fontFamily := "monospace",
     ^.backgroundColor := "#eee",
@@ -40,6 +41,14 @@ object Styles {
 
   val genOuter = TagMod(
     ^.gridArea := gridGen,
+  )
+
+  val genBlock = TagMod(
+    ^.marginBottom := "1em",
+  )
+
+  val genOptionRow = TagMod(
+    ^.marginTop := "0.1em",
   )
 
   val genBody = TagMod(
@@ -53,7 +62,15 @@ object Styles {
 
   val highlight = TagMod(
     ^.borderRadius := "4px",
-    ^.minHeight := "100%",
+    ^.height := "calc(100% - 2em - 15px)",
+    ^.margin := "0",
+  )
+
+  val header = TagMod(
+    ^.fontSize := "150%",
+    ^.fontWeight.bold,
+    ^.color := "#c00",
+    ^.marginBottom := "0.3em",
   )
 
   val checkbox =

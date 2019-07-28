@@ -15,6 +15,7 @@ object OutputComponent {
   private def render(p: Props): VdomElement =
     <.section(
       Styles.outputOuter,
+      <.header(Styles.header, "Output"),
       Highlight(p.output))
 
   val Component = ScalaComponent.builder[Props]("OutputComponent")

@@ -18,6 +18,7 @@ object InputComponent {
     def render(p: Props): VdomElement =
       <.section(
         Styles.inputOuter,
+        <.header(Styles.header, "Input"),
         <.textarea(
           Styles.inputTextarea,
           ^.autoFocus := true,

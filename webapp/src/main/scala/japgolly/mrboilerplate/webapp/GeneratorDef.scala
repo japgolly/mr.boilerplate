@@ -65,6 +65,7 @@ object GeneratorDef {
 
   private def checkbox[O](s: StateSnapshot[O])(l: Lens[O, Boolean], txt: String) =
     <.div(
+      Styles.genOptionRow,
       <.label(
         <.input.checkbox(
           Styles.checkbox,
