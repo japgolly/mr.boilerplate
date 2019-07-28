@@ -67,15 +67,41 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'poly - assertGen(
+      Cls("NonEmptyList", List("A"), List("head" -> "A", "tail" -> "List[A]")),
+      glopt = globalOptions.copy(shortInstanceNames = true)
+    )(
+      """
+        |implicit def decoder[A: Decoder]: Decoder[NonEmptyList[A]] =
+        |  Decoder.forProduct2("head", "tail")(NonEmptyList.apply)
+        |""".stripMargin,
+      """
+        |implicit def encoder[A: Encoder]: Encoder[NonEmptyList[A]] =
+        |  Encoder.forProduct2("head", "tail")(a => (a.head, a.tail))
+        |""".stripMargin)
+
+    'polyK - assertGen(
       Cls("Poly", List("F[_, _[_]]", "A"), List("fa" -> "F[A]"))
     )(
       """
-        |implicit def decoderPoly[F[_, _[_]], A]: Decoder[Poly[F, A]] =
+        |implicit def decoderPoly[F[_, _[_]], A](implicit ev1: Decoder[F[A]]): Decoder[Poly[F, A]] =
         |  Decoder.forProduct1("fa")(Poly.apply)
         |""".stripMargin,
       """
-        |implicit def encoderPoly[F[_, _[_]], A]: Encoder[Poly[F, A]] =
+        |implicit def encoderPoly[F[_, _[_]], A](implicit ev1: Encoder[F[A]]): Encoder[Poly[F, A]] =
         |  Encoder.forProduct1("fa")(_.fa)
+        |""".stripMargin)
+
+    'polyK2 - assertGen(
+      Cls("PolyK2", List("F[_]", "A", "B"), List("fa" -> "F[A]", "a" -> "A", "b" -> "FFF[B]")),
+      glopt = globalOptions.copy(shortInstanceNames = true)
+    )(
+      """
+        |implicit def decoder[F[_], A: Decoder, B: Decoder](implicit ev1: Decoder[F[A]]): Decoder[PolyK2[F, A, B]] =
+        |  Decoder.forProduct3("fa", "a", "b")(PolyK2.apply)
+        |""".stripMargin,
+      """
+        |implicit def encoder[F[_], A: Encoder, B: Encoder](implicit ev1: Encoder[F[A]]): Encoder[PolyK2[F, A, B]] =
+        |  Encoder.forProduct3("fa", "a", "b")(a => (a.fa, a.a, a.b))
         |""".stripMargin)
 
     'short - assertGen(
@@ -172,6 +198,5 @@ object CirceTest extends TestSuite {
         |    )
         |  }
         |""".stripMargin)
-
   }
 }

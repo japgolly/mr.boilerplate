@@ -1,6 +1,7 @@
 package japgolly.mrboilerplate.core
 
 import StringUtils._
+import japgolly.microlibs.utils.Memo
 import japgolly.univeq.UnivEq
 
 final case class Cls(name: String, typeParams: List[Type], fields: List[Field]) {
@@ -27,6 +28,58 @@ final case class Cls(name: String, typeParams: List[Type], fields: List[Field]) 
       ""
     else
       typeParams.mkString("[", ", ", "]")
+
+  private val polyField: Field => Boolean =
+    Memo(f => typeParams.exists(t => t.isHK && f.typ.contains(t)))
+
+  private val typeUsedInMonoField: Type => Boolean =
+    Memo(t => fields.exists(f => !polyField(f) && f.typ.contains(t)))
+
+//  if (name == "PolyK2") {
+//    println("types:")
+//    for (t <- typeParams)
+//      println(s"  $t  ---  usedInMono=${typeUsedInMonoField(t)}")
+//    println("fields:")
+//    for (f <- fields)
+//      println(s"  $f  ---  polyField=${polyField(f)}")
+//    println("contains:")
+//    for {
+//      f <- fields
+//      t <- typeParams
+//    } println(s"  ${f.typ} contains $t via ${t.findRegex}  ==  ${f.typ.contains(t)}")
+//  }
+
+  /** `[F[_], A: TC1: TC2, B: TC1: TC2]` */
+  def typeParamDefsWithTC(tc1: String, tcN: String*): String =
+    if (typeParams.isEmpty)
+      ""
+    else {
+      val constraints = (tc1 +: tcN).map(": " + _).mkString
+      def needTC(t: Type): Boolean = !t.isHK && typeUsedInMonoField(t)
+      typeParams
+        .iterator
+        .map(t => if (needTC(t)) t.value + constraints else t.value)
+        .mkString("[", ", ", "]")
+    }
+
+  def implicitHkEv(tc: String): List[Field] =
+    fields
+      .iterator
+      .filter(f => typeParams.exists(t => t.isHK && f.typ.contains(t)))
+      .zipWithIndex
+      .map { case (f, i) => Field(FieldName("ev" + (i + 1)), Type(s"$tc[${f.typ}]")) }
+      .toList
+
+  /** `(implicit ev1: TC[F[A]])` */
+  def implicitHkEvDecl(tc: String): String =
+    implicitHkEv(tc) match {
+      case Nil => ""
+      case evs => evs.mkString("(implicit ", ", ", ")")
+    }
+
+  /** `[F[_], A, B: TC](implicit ev1: TC[F[A]])` */
+  def typeParamDefsAndEvTC(tc: String): String =
+    typeParamDefsWithTC(tc) + implicitHkEvDecl(tc)
 
   val typeParamAp: String =
     if (typeParams.isEmpty)
@@ -70,6 +123,16 @@ object FieldName {
 final case class Type(value: String) {
   override def toString = value
   def withoutWildcards = value.withoutWildcards
+  val isHK = value.contains('[') && value.contains('_')
+
+  def contains(t: Type): Boolean =
+    t.findRegex.pattern.matcher(value).find
+
+  val findRegex =
+    if (isHK)
+      s"\\b${value.withoutWildcards.quoteForRegex}\\b\\s*\\[".r
+    else
+      s"\\b${value.quoteForRegex}\\b".r
 }
 
 object Type {

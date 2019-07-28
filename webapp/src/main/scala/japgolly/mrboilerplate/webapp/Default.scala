@@ -10,6 +10,8 @@ object Default {
        |                  address: Address,
        |                  phone  : Option[PhoneNumber])
        |
+       |final case class NonEmptyList[A](head: A, tail: List[A])
+       |
        |final case class Roles[F[_], +A <: AnyRef](roles: F[A])
      """.stripMargin.trim
 

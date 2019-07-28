@@ -22,7 +22,7 @@ object UnivEqGen extends Generator {
 
     val sep = if (opt.oneLine) " " else "\n  "
 
-    val decl = s"implicit $valDef univEq$suffix$typeParamDefs: UnivEq[$nameWithTypesApplied] =${sep}UnivEq.derive"
+    val decl = s"implicit $valDef univEq$suffix${typeParamDefsAndEvTC("UnivEq")}: UnivEq[$nameWithTypesApplied] =${sep}UnivEq.derive"
 
     decl :: Nil
 

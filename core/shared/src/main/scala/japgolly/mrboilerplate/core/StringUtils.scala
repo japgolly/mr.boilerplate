@@ -80,6 +80,12 @@ object StringUtils {
 
     def withoutWildcards =
       self.replaceAll("""\[[\[\]_,\s]+\]""", "")
+
+    def quoteForRegex: String =
+      self.iterator.flatMap {
+        case c if "()[]^${}*+?\\".contains(c) => "\\" + c
+        case c                                => c.toString
+      }.mkString("(?:", "", ")")
   }
 
 }

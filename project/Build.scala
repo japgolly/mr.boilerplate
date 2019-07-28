@@ -83,6 +83,7 @@ object Build {
         "com.lihaoyi"                   %%% "scalaparse"    % Ver.FastParse,
         "com.github.japgolly.microlibs" %%% "nonempty"      % Ver.Microlibs,
         "com.github.japgolly.microlibs" %%% "stdlib-ext"    % Ver.Microlibs,
+        "com.github.japgolly.microlibs" %%% "utils"         % Ver.Microlibs,
         "com.github.japgolly.univeq"    %%% "univeq"        % Ver.UnivEq,
         "com.github.julien-truffaut"    %%% "monocle-core"  % Ver.Monocle,
         "com.github.julien-truffaut"    %%% "monocle-macro" % Ver.Monocle))

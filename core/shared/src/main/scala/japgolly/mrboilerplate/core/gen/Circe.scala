@@ -1,6 +1,6 @@
 package japgolly.mrboilerplate.core.gen
 
-import japgolly.mrboilerplate.core.{Cls, FieldName}
+import japgolly.mrboilerplate.core._
 import japgolly.mrboilerplate.core.StringUtils._
 import monocle.macros.Lenses
 
@@ -87,13 +87,13 @@ object Circe extends Generator {
 
     val decoder =
       s"""
-         |implicit $valDef decoder$suffix$typeParamDefs: Decoder[$nameWithTypesApplied] =
+         |implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$nameWithTypesApplied] =
          |  $decoderBody
          |""".stripMargin.trim
 
     val encoder =
       s"""
-         |implicit $valDef encoder$suffix$typeParamDefs: Encoder[$nameWithTypesApplied] =
+         |implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$nameWithTypesApplied] =
          |  $encoderBody
          |""".stripMargin.trim
 
