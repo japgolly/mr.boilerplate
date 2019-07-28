@@ -57,7 +57,10 @@ object GeneratorsComponent {
             Styles.checkbox,
             ^.checked := enabled,
             ^.onChange --> s.modState(_.toggle(gd))),
-          gen.title)
+          "Generator: ",
+          <.span(
+            ^.color := "#00c",
+            gen.title))
 
       def body: VdomElement = {
         val optionState: StateSnapshot[gen.Options] =
@@ -80,7 +83,7 @@ object GeneratorsComponent {
     def render(p: Props): VdomElement =
       <.section(
         Styles.genOuter,
-        <.header(Styles.header, "Generators & Config"),
+        <.header(Styles.header, "Settings"),
         <.div(GeneratorDef.values.whole.map(renderGen(_, p.state)): _*))(
         renderGlobalOptions(p.state))
   }
