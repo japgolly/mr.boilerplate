@@ -1,6 +1,7 @@
 package japgolly.mrboilerplate.core.gen
 
 import japgolly.mrboilerplate.core._
+import japgolly.mrboilerplate.core.data._
 import sourcecode.Line
 import utest._
 

@@ -1,6 +1,6 @@
 package japgolly.mrboilerplate.core.gen
 
-import japgolly.mrboilerplate.core.Cls
+import japgolly.mrboilerplate.core.data._
 import japgolly.mrboilerplate.core.StringUtils._
 import monocle.macros.Lenses
 

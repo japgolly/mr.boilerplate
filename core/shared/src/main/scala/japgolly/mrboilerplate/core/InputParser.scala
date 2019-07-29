@@ -2,6 +2,7 @@ package japgolly.mrboilerplate.core
 
 import fastparse._
 import fastparse.MultiLineWhitespace._
+import japgolly.mrboilerplate.core.data._
 import japgolly.univeq.UnivEq
 
 object InputParser {

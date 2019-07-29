@@ -1,6 +1,7 @@
 package japgolly.mrboilerplate.core
 
 import scala.collection.generic.CanBuildFrom
+import japgolly.mrboilerplate.core.data._
 
 object UnsafeTypes {
 

@@ -1,6 +1,6 @@
 package japgolly.mrboilerplate.core.gen
 
-import japgolly.mrboilerplate.core.Cls
+import japgolly.mrboilerplate.core.data._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 
 trait Generator { self =>

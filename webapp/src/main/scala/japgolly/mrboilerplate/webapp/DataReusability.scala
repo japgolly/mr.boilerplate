@@ -1,7 +1,8 @@
 package japgolly.mrboilerplate.webapp
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.mrboilerplate.core.{Cls, InputParser}
+import japgolly.mrboilerplate.core.InputParser
+import japgolly.mrboilerplate.core.data._
 import japgolly.mrboilerplate.core.gen.Generator
 import japgolly.scalajs.react.Reusability
 import japgolly.univeq.UnivEq
