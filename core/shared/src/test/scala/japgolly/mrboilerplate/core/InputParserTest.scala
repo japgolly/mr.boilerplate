@@ -7,7 +7,7 @@ import utest._
 object InputParserTest extends TestSuite {
   import CoreTestUtil._
   import InputParser.Element
-  import InputParser.Element.Unrecognised
+  import InputParser.Element.{AbstractClass, Unrecognised}
   import UnsafeTypes._
 
   private def assertParse(input: String)(expect: Element*)(implicit l: Line): Unit = {
@@ -91,11 +91,18 @@ object InputParserTest extends TestSuite {
           |/** what? */
           |abstract trait ActiveEvent extends Event
           |
+          |// ah
+          |abstract class Y1
+          |// ah
+          |abstract case class Y2()
+          |
           |case class X(i: Int)
         """.stripMargin
       assertParse(input)(
         Unrecognised("trait Event"),
         Unrecognised("abstract trait ActiveEvent extends Event"),
+        AbstractClass(Cls("Y1", Nil, Nil, Nil)),
+        AbstractClass(Cls("Y2", Nil, Nil, Nil)),
         Cls("X", Nil, List("i" -> "Int"), Nil)
       )
     }

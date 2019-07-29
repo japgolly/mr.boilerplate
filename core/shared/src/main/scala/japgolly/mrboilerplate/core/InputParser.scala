@@ -114,13 +114,18 @@ object InputParser {
             typeParams = types.iterator.flatten.toList,
             superTypes = sup.toList,
           ))
-        else
-          Element.Class(Cls(
+        else {
+          val cls = Cls(
             name       = name,
             typeParams = types.iterator.flatten.toList,
             fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList,
             superTypes = sup.toList,
-          ))
+          )
+          if (f.isAbstract)
+            Element.AbstractClass(cls)
+          else
+            Element.Class(cls)
+        }
     }
 
   private def sealedTrait[_: P]: P[Element] =
@@ -153,9 +158,10 @@ object InputParser {
       case Parsed.Success(value, _) =>
         value
           .filter {
-            case Element.Empty           => false
-            case _: Element.Success      => true
-            case u: Element.Unrecognised => u.text.nonEmpty
+            case Element.Empty            => false
+            case _: Element.Success       => true
+            case u: Element.Unrecognised  => u.text.nonEmpty
+            case _: Element.AbstractClass => true
           }
           .toList
       case f: Parsed.Failure =>
@@ -165,22 +171,24 @@ object InputParser {
 
   sealed trait Element {
     final def success: Option[Element.Success] = this match {
-      case s: Element.Success      => Some(s)
-      case Element.Empty
-         | Element.Unrecognised(_) => None
+      case s: Element.Success => Some(s)
+      case _: Element.Failure
+         | Element.Empty      => None
     }
-    final def failure: Option[Element.Unrecognised] = this match {
-      case u: Element.Unrecognised => Some(u)
+    final def failure: Option[Element.Failure] = this match {
+      case f: Element.Failure => Some(f)
       case _: Element.Success
-         | Element.Empty           => None
+         | Element.Empty      => None
     }
   }
   object Element {
     sealed trait Success extends Element
+    sealed trait Failure extends Element
     case object Empty extends Element
-    final case class Unrecognised(text: String) extends Element
     final case class Class(value: Cls) extends Success
     final case class SealedBase(value: data.SealedBase) extends Success
+    final case class Unrecognised(text: String) extends Failure
+    final case class AbstractClass(value: Cls) extends Failure
 
     implicit def univEqU: UnivEq[Unrecognised] = UnivEq.derive
     implicit def univEq: UnivEq[Element] = UnivEq.derive
