@@ -38,28 +38,39 @@ object InputParser {
 
     def BlockDef[_: P]: P[Unit] = P( Dcl | TraitDef  | ClsDef | ObjDef )
 
-    def ClsDef[_: P] = {
+    def ClsDef[_: P]: P[(String, Option[Seq[String]], Seq[Seq[(String, String)]], Seq[Type])] = {
       def ClsAnnot = P( `@` ~ SimpleType ~ ArgList.? )
       def Prelude = P( NotNewline ~ ( ClsAnnot.rep(1) ~ AccessMod.? | AccessMod) )
       def ClsArgMod = P( Mod.rep ~ (`val` | `var`) )
       def ClsArg = P( Annot.rep ~ ClsArgMod.? ~ Id.! ~ `:` ~ Type.! ~ (`=` ~ ExprCtx.Expr).? )
       def ClsArgs = P( OneNLMax ~ "(" ~/ `implicit`.? ~ ClsArg.repTC() ~ ")" )
 
-      P( `case`.? ~ `class` ~/ Id.! ~ TypeArgList2.? ~~ Prelude.? ~~ ClsArgs.repX ~ DefTmpl.? )
+      P( `case`.? ~ `class` ~/ Id.! ~ TypeArgList2.? ~~ Prelude.? ~~ ClsArgs.repX ~ DefTmpl.?.map(_.getOrElse(Seq.empty)) )
     }
 
-    def Constrs[_: P] = P( (WL ~ Constr).rep(1, `with`./) )
-    def EarlyDefTmpl[_: P] = P( TmplBody ~ (`with` ~/ Constr).rep ~ TmplBody.? )
-    def NamedTmpl[_: P] = P( Constrs ~ TmplBody.? )
+    def Constrs[_: P]: P[Seq[data.Type]] =
+      P( (WL ~ Constr).rep(1, `with`./) )
 
-    def DefTmpl[_: P] = P( (`extends` | `<:`) ~ AnonTmpl | TmplBody )
-    def AnonTmpl[_: P] = P( EarlyDefTmpl | NamedTmpl | TmplBody )
+    def EarlyDefTmpl[_: P]: P[Seq[data.Type]] =
+      P( TmplBody ~ (`with` ~/ Constr).rep ~ TmplBody.? )
+
+    def NamedTmpl[_: P]: P[Seq[data.Type]] =
+      P( Constrs ~ TmplBody.? )
+
+    def DefTmpl[_: P]: P[Seq[data.Type]] =
+      P( (`extends` | `<:`) ~ AnonTmpl2 | TmplBody.map(_ => Seq.empty) )
+
+    def AnonTmpl2[_: P]: P[Seq[data.Type]] =
+      P( EarlyDefTmpl | NamedTmpl | TmplBody.map(_ => Seq.empty) )
+
+    override def AnonTmpl[_: P] = AnonTmpl2.map(_ => ())
 
     def TraitDef[_: P] = P( `trait` ~/ Id ~ TypeArgList.? ~ DefTmpl.? )
 
     def ObjDef[_: P]: P[Unit] = P( `case`.? ~ `object` ~/ Id ~ DefTmpl.? )
 
-    def Constr[_: P] = P( AnnotType ~~ (NotNewline ~ ParenArgList ).repX )
+    def Constr[_: P] = P( AnnotType2 ~~ (NotNewline ~ ParenArgList ).repX )
+    def AnnotType2[_: P] = P(SimpleType.!.map(s => data.Type(s.trim)) ~~ NLAnnot.repX )
 
 //    def PkgObj[_: P] = P( ObjDef )
 //    def PkgBlock[_: P] = P( QualId ~/ `{` ~ TopStatSeq.? ~ `}` )
@@ -79,12 +90,14 @@ object InputParser {
   // ===================================================================================================================
 
   private def cls[_: P]: P[Element] =
-    P(Scala.Mod.? ~ Scala.ClsDef).map {
-      case (name, types, fields) =>
+    P(Scala.Mod.rep ~ Scala.ClsDef).map {
+      case (name, types, fields, sup) =>
         Element.Class(Cls(
           name       = name,
           typeParams = types.iterator.flatten.map(Type(_)).toList,
-          fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList))
+          fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList,
+          superTypes = sup.toList,
+        ))
     }
 
   private def ignore[_: P]: P[Unit] =

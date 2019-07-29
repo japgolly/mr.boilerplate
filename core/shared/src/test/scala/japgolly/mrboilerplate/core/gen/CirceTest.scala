@@ -32,7 +32,7 @@ object CirceTest extends TestSuite {
   override def tests = Tests {
 
     'mono0 - assertGen(
-      Cls("Mono", Nil, Nil)
+      Cls("Mono", Nil, Nil, Nil)
     )(
       """
         |implicit val decoderMono: Decoder[Mono] =
@@ -44,7 +44,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'mono1 - assertGen(
-      Cls("FieldName", Nil, List("value" -> "String"))
+      Cls("FieldName", Nil, List("value" -> "String"), Nil)
     )(
       """
         |implicit val decoderFieldName: Decoder[FieldName] =
@@ -56,7 +56,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'monoN - assertGen(
-      Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"))
+      Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"), Nil)
     )(
       """
         |implicit val decoderClass: Decoder[Class] =
@@ -68,7 +68,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'poly - assertGen(
-      Cls("NonEmptyList", List("A"), List("head" -> "A", "tail" -> "List[A]")),
+      Cls("NonEmptyList", List("A"), List("head" -> "A", "tail" -> "List[A]"), Nil),
       glopt = globalOptions.copy(shortInstanceNames = true)
     )(
       """
@@ -81,7 +81,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'polyK - assertGen(
-      Cls("Poly", List("F[_, _[_]]", "A"), List("fa" -> "F[A]"))
+      Cls("Poly", List("F[_, _[_]]", "A"), List("fa" -> "F[A]"), Nil)
     )(
       """
         |implicit def decoderPoly[F[_, _[_]], A](implicit ev1: Decoder[F[A]]): Decoder[Poly[F, A]] =
@@ -93,7 +93,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'polyK2 - assertGen(
-      Cls("PolyK2", List("F[_]", "A", "B"), List("fa" -> "F[A]", "a" -> "A", "b" -> "FFF[B]")),
+      Cls("PolyK2", List("F[_]", "A", "B"), List("fa" -> "F[A]", "a" -> "A", "b" -> "FFF[B]"), Nil),
       glopt = globalOptions.copy(shortInstanceNames = true)
     )(
       """
@@ -106,7 +106,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'short - assertGen(
-      Cls("FieldName", Nil, List("value" -> "String")),
+      Cls("FieldName", Nil, List("value" -> "String"), Nil),
       glopt = globalOptions.copy(shortInstanceNames = true)
     )(
       """
@@ -119,7 +119,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'flat1 - assertGen(
-      Cls("FieldName", Nil, List("value" -> "String")),
+      Cls("FieldName", Nil, List("value" -> "String"), Nil),
       circeOptions.copy(singlesAsObjects = false)
     )(
       """
@@ -132,7 +132,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'monadic - assertGen(
-      Cls("X", Nil, List("a" -> "A", "bee" -> "B")),
+      Cls("X", Nil, List("a" -> "A", "bee" -> "B"), Nil),
       circeOptions.copy(monadicObjects = true)
     )(
       """
@@ -153,7 +153,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'fieldKeysP - assertGen(
-      Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]")),
+      Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"), Nil),
       circeOptions.copy(keyConstants = true),
       globalOptions.copy(shortInstanceNames = false)
     )(
@@ -171,7 +171,7 @@ object CirceTest extends TestSuite {
         |""".stripMargin)
 
     'fieldKeysM - assertGen(
-      Cls("X", Nil, List("a" -> "A", "bee" -> "B")),
+      Cls("X", Nil, List("a" -> "A", "bee" -> "B"), Nil),
       circeOptions.copy(monadicObjects = true, keyConstants = true),
       globalOptions.copy(shortInstanceNames = true)
     )(

@@ -40,10 +40,10 @@ object InputParserTest extends TestSuite {
         |String)case   class   Type  (v:T)
         |""".stripMargin
       assertParse(input)(
-        Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]")),
-        Cls("Field", Nil, List("name" -> "FieldName", "typ" -> "Type")),
-        Cls("FieldName", Nil, List("value" -> "String")),
-        Cls("Type", Nil, List("v" -> "T")),
+        Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"), Nil),
+        Cls("Field", Nil, List("name" -> "FieldName", "typ" -> "Type"), Nil),
+        Cls("FieldName", Nil, List("value" -> "String"), Nil),
+        Cls("Type", Nil, List("v" -> "T"), Nil),
       )
     }
 
@@ -54,10 +54,7 @@ object InputParserTest extends TestSuite {
         |class Poly[F[_], +A] private (val f: F[A])(implicit x: X) extends Omg[F, A, F]
         |""".stripMargin
       assertParse(input)(
-        Cls(
-          "Poly",
-          List("F[_]", "A"),
-          List("f" -> "F[A]")),
+        Cls("Poly", List("F[_]", "A"), List("f" -> "F[A]"), List("Omg[F, A, F]")),
       )
     }
 
@@ -66,7 +63,7 @@ object InputParserTest extends TestSuite {
       """
         |asdfjhkasgdflkjsa
         |
-        |class TagOf[+N <: TopNode] private[vdom](final val tag: String,
+        |class TagOf[ + N <: TopNode] private[vdom](final val tag: String,
         |                                         final val modifiers: List[Seq[TagMod]],
         |) extends VdomElement {
         |
@@ -80,14 +77,8 @@ object InputParserTest extends TestSuite {
         |""".stripMargin
       assertParse(input)(
         Unrecognised("asdfjhkasgdflkjsa"),
-        Cls(
-          "TagOf",
-          List("N"),
-          List("tag" -> "String", "modifiers" -> "List[Seq[TagMod]]")),
-        Cls(
-          "HtmlTagOf",
-          List("N"),
-          List("name" -> "String")),
+        Cls("TagOf", List("N"), List("tag" -> "String", "modifiers" -> "List[Seq[TagMod]]"), List("VdomElement")),
+        Cls("HtmlTagOf", List("N"), List("name" -> "String"), List("AnyVal", "X")),
         Unrecognised("def a"),
       )
     }
@@ -100,12 +91,29 @@ object InputParserTest extends TestSuite {
           |/** what? */
           |sealed trait ActiveEvent extends Event
           |
-          |case class X(i: Int) extends ActiveEvent
+          |case class X(i: Int)
         """.stripMargin
       assertParse(input)(
         Unrecognised("sealed trait Event"),
         Unrecognised("sealed trait ActiveEvent extends Event"),
-        Cls("X", Nil, List("i" -> "Int"))
+        Cls("X", Nil, List("i" -> "Int"), Nil)
+      )
+    }
+
+    'superTraits - {
+      val input =
+        """
+          |sealed trait Event
+          |// ah
+          |sealed trait ActiveEvent[A] extends Event
+          |sealed protected case class X(i: Int) extends ActiveEvent[List[Int]]
+          | with
+          |  AnyVal
+        """.stripMargin
+      assertParse(input)(
+        Unrecognised("sealed trait Event"),
+        Unrecognised("sealed trait ActiveEvent[A] extends Event"),
+        Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
       )
     }
 

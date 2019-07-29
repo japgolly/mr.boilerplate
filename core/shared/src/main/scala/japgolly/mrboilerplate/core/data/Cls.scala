@@ -4,11 +4,16 @@ import japgolly.microlibs.utils.Memo
 import japgolly.mrboilerplate.core.MaxLen
 import japgolly.univeq.UnivEq
 
-final case class Cls(name: String, typeParams: List[Type], fields: List[Field]) {
+final case class Cls(name      : String,
+                     typeParams: List[Type],
+                     fields    : List[Field],
+                     superTypes: List[Type]) {
+
   override def toString: String = {
-    val tp = if (typeParams.isEmpty) "" else typeParams.iterator.map(_.value).mkString("[", ", ", "]")
+    val tp = if (typeParams.isEmpty) "" else typeParams.mkString("[", ", ", "]")
     val fs = fields.mkString("(", ", ", ")")
-    s"class $name$tp$fs"
+    val ex = if (superTypes.isEmpty) "" else superTypes.mkString(" extends ", " with ", "")
+    s"class $name$tp$fs$ex"
   }
 
   implicit lazy val maxFieldLen: MaxLen =
