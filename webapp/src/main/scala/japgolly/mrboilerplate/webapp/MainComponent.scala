@@ -51,7 +51,7 @@ object MainComponent {
           val decls =
             gen.enabled.iterator.flatMap { gd =>
               val opt = gen.optionsFor(gd)
-              gd.gen.generate(cls, opt, glopt)
+              gd.gen.genCls(cls, opt, glopt)
             }.mkString("\n\n")
 
           if (glopt.generateCompanions && decls.nonEmpty) {

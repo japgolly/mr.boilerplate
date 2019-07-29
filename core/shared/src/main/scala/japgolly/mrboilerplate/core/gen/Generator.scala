@@ -2,13 +2,34 @@ package japgolly.mrboilerplate.core.gen
 
 import japgolly.mrboilerplate.core.data._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.mrboilerplate.core.InputParser
 
 trait Generator { self =>
   type Options
 
   val title: String
 
-  def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String]
+  def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String]
+  def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String]
+
+  final def gen(parts: TraversableOnce[InputParser.Element.Success], o: Options, go: GlobalOptions): List[String] =
+    if (go.generateCompanions)
+      // Order doesn't matter
+      parts.toIterator.flatMap {
+        case InputParser.Element.Class(c)       => genCls(c, o, go)
+        case InputParser.Element.SealedBase(sb) => genSB(sb, o, go)
+      }.toList
+    else {
+      // Order matters; generate dependants first
+      val r1 = List.newBuilder[String]
+      val r2 = List.newBuilder[String]
+      parts.foreach  {
+        case InputParser.Element.Class(c)       => r1 ++= genCls(c, o, go)
+        case InputParser.Element.SealedBase(sb) => r2 ++= genSB(sb, o, go)
+      }
+      r1 ++= r2.result()
+      r1.result()
+    }
 
   final type AndOptions = Generator.AndOptions { val gen: self.type }
 

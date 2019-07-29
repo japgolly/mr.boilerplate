@@ -7,7 +7,7 @@ import japgolly.univeq.UnivEq
 final case class Cls(name      : String,
                      typeParams: List[Type],
                      fields    : List[Field],
-                     superTypes: List[Type]) {
+                     superTypes: List[Type]) extends TypeDef {
 
   override def toString: String = {
     val tp = if (typeParams.isEmpty) "" else typeParams.mkString("[", ", ", "]")
@@ -21,21 +21,6 @@ final case class Cls(name      : String,
 
   val fieldCount: Int =
     fields.size
-
-  val valDef: String =
-    if (typeParams.isEmpty)
-      "val"
-    else
-      "def"
-
-  val typeParamDefs: String =
-    if (typeParams.isEmpty)
-      ""
-    else
-      typeParams.mkString("[", ", ", "]")
-
-  private val polyField: Field => Boolean =
-    Memo(f => typeParams.exists(t => t.isHK && f.typ.contains(t)))
 
   private val typeUsedInMonoField: Type => Boolean =
     Memo(t => fields.exists(f => !polyField(f) && f.typ.contains(t)))
@@ -85,15 +70,6 @@ final case class Cls(name      : String,
   /** `[F[_], A, B: TC](implicit ev1: TC[F[A]])` */
   def typeParamDefsAndEvTC(tc: String): String =
     typeParamDefsWithTC(tc) + implicitHkEvDecl(tc)
-
-  val typeParamAp: String =
-    if (typeParams.isEmpty)
-      ""
-    else
-      typeParams.map(_.withoutWildcards).mkString("[", ", ", "]")
-
-  def nameWithTypesApplied: String =
-    name + typeParamAp
 
   val fieldNames: String =
     fields.map(_.name).mkString(", ")

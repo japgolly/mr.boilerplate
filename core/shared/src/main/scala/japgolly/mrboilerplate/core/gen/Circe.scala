@@ -13,14 +13,10 @@ object Circe extends Generator {
                            monadicObjects: Boolean,
                            keyConstants: Boolean)
 
-  override def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
+  override def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
     import cls._
 
-    val suffix =
-      if (glopt.shortInstanceNames)
-        ""
-      else
-        name.withHeadUpper
+    val suffix = termSuffix(glopt)
 
     val apply =
       name + ".apply"
@@ -100,6 +96,10 @@ object Circe extends Generator {
       keys :: decoder :: encoder :: Nil
     } else
       decoder :: encoder :: Nil
-
   }
+
+  override def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
+    Nil
+  }
+
 }

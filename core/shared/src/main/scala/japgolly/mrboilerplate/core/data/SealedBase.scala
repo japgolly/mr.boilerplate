@@ -4,7 +4,7 @@ import japgolly.univeq.UnivEq
 
 final case class SealedBase(name      : String,
                             typeParams: List[Type],
-                            superTypes: List[Type]) {
+                            superTypes: List[Type]) extends TypeDef {
 
   override def toString: String = {
     val tp = if (typeParams.isEmpty) "" else typeParams.mkString("[", ", ", "]")
@@ -12,6 +12,8 @@ final case class SealedBase(name      : String,
     s"sealed _____ $name$tp$ex"
   }
 
+  override def typeParamDefsAndEvTC(tc: String) =
+    typeParamDefs
 
 }
 
