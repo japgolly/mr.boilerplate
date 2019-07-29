@@ -19,4 +19,7 @@ object UnsafeTypes {
 
   implicit def inputParserElementC(a: Cls): InputParser.Element =
     InputParser.Element.Class(a)
+
+  implicit def inputParserElementS(a: SealedBase): InputParser.Element =
+    InputParser.Element.SealedBase(a)
 }

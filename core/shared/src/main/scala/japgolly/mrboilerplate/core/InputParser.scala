@@ -7,18 +7,30 @@ import japgolly.univeq.UnivEq
 
 object InputParser {
 
+  private final case class Flags(isSealed: Boolean, isAbstract: Boolean)
+  private object Flags {
+    val empty = Flags(false, false)
+
+    // lol
+    def fromStr(s: String): Flags =
+      Flags(
+        isSealed = s.contains("sealed"),
+        isAbstract = s.contains("abstract"),
+      )
+  }
+
   private object Scala
     extends scalaparse.Core
       with scalaparse.Types
       with scalaparse.Exprs {
 
-    def TypeArg2[_: P]: P[String] = {
+    def TypeArg2[_: P]: P[Type] = {
       def CtxBounds = P((`<%` ~/ Type).rep ~ (`:` ~/ Type).rep)
-      P(((Id | `_`) ~ TypeArgList.?).! ~ TypeBounds ~ CtxBounds)
+      P(((Id | `_`) ~ TypeArgList.?).!.map(s => data.Type(s.trim)) ~ TypeBounds ~ CtxBounds)
     }
 
-    def TypeArgList2[_: P]: P[Seq[String]] = {
-      def Variant: P[String] = P( Annot.rep ~ CharIn("+\\-").? ~ TypeArg2 )
+    def TypeArgList2[_: P]: P[Seq[Type]] = {
+      def Variant: P[Type] = P( Annot.rep ~ CharIn("+\\-").? ~ TypeArg2 )
       P( "[" ~/ Variant.repTC(1) ~ "]" )
     }
 
@@ -38,7 +50,7 @@ object InputParser {
 
     def BlockDef[_: P]: P[Unit] = P( Dcl | TraitDef  | ClsDef | ObjDef )
 
-    def ClsDef[_: P]: P[(String, Option[Seq[String]], Seq[Seq[(String, String)]], Seq[Type])] = {
+    def ClsDef[_: P]: P[(String, Option[Seq[Type]], Seq[Seq[(String, String)]], Seq[Type])] = {
       def ClsAnnot = P( `@` ~ SimpleType ~ ArgList.? )
       def Prelude = P( NotNewline ~ ( ClsAnnot.rep(1) ~ AccessMod.? | AccessMod) )
       def ClsArgMod = P( Mod.rep ~ (`val` | `var`) )
@@ -65,7 +77,8 @@ object InputParser {
 
     override def AnonTmpl[_: P] = AnonTmpl2.map(_ => ())
 
-    def TraitDef[_: P] = P( `trait` ~/ Id ~ TypeArgList.? ~ DefTmpl.? )
+    def TraitDef[_: P]: P[(String, Option[Seq[Type]], Seq[Type])] =
+      P( `trait` ~/ Id.! ~ TypeArgList2.? ~ DefTmpl.?.map(_.getOrElse(Seq.empty)) )
 
     def ObjDef[_: P]: P[Unit] = P( `case`.? ~ `object` ~/ Id ~ DefTmpl.? )
 
@@ -89,13 +102,33 @@ object InputParser {
 
   // ===================================================================================================================
 
+  private def flags[_: P]: P[Flags] =
+    P(Scala.Mod.rep.!.map(Flags.fromStr))
+
   private def cls[_: P]: P[Element] =
-    P(Scala.Mod.rep ~ Scala.ClsDef).map {
-      case (name, types, fields, sup) =>
-        Element.Class(Cls(
+    P(flags ~ Scala.ClsDef).map {
+      case (f, (name, types, fields, sup)) =>
+        if (f.isSealed && f.isAbstract)
+          Element.SealedBase(SealedBase(
+            name       = name,
+            typeParams = types.iterator.flatten.toList,
+            superTypes = sup.toList,
+          ))
+        else
+          Element.Class(Cls(
+            name       = name,
+            typeParams = types.iterator.flatten.toList,
+            fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList,
+            superTypes = sup.toList,
+          ))
+    }
+
+  private def sealedTrait[_: P]: P[Element] =
+    P(flags.filter(_.isSealed) ~ Scala.TraitDef).map {
+      case (_, (name, types, sup)) =>
+        Element.SealedBase(SealedBase(
           name       = name,
-          typeParams = types.iterator.flatten.map(Type(_)).toList,
-          fields     = fields.iterator.take(1).flatten.map { case (n, t) => Field(FieldName(n), Type(t)) }.toList,
+          typeParams = types.iterator.flatten.toList,
           superTypes = sup.toList,
         ))
     }
@@ -104,10 +137,7 @@ object InputParser {
     P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment)
 
   private def recognised[_: P]: P[Element] =
-    P(cls | ignore.rep(1).map(_ => Element.Empty))
-//    P(cls | ignore.rep(1).!.map{s =>
-//      println(s"Ignoring: [${s.replace("\n", "\\n")}]")
-//      Element.Empty})
+    P(cls | sealedTrait | ignore.rep(1).map(_ => Element.Empty))
 
   private def unrecognised[_: P]: P[Element] =
     P((!recognised ~~ (CharPred(_.isWhitespace) | CharsWhile(!_.isWhitespace))).rep.!.map(t => Element.Unrecognised(t.trim)))
@@ -124,7 +154,7 @@ object InputParser {
         value
           .filter {
             case Element.Empty           => false
-            case _: Element.Class        => true
+            case _: Element.Success      => true
             case u: Element.Unrecognised => u.text.nonEmpty
           }
           .toList
@@ -134,21 +164,23 @@ object InputParser {
     }
 
   sealed trait Element {
-    final def success: Option[Cls] = this match {
-      case Element.Class(cls)        => Some(cls)
-      case Element.Unrecognised(_)
-         | Element.Empty             => None
+    final def success: Option[Element.Success] = this match {
+      case s: Element.Success      => Some(s)
+      case Element.Empty
+         | Element.Unrecognised(_) => None
     }
     final def failure: Option[Element.Unrecognised] = this match {
       case u: Element.Unrecognised => Some(u)
-      case _: Element.Class
+      case _: Element.Success
          | Element.Empty           => None
     }
   }
   object Element {
+    sealed trait Success extends Element
     case object Empty extends Element
     final case class Unrecognised(text: String) extends Element
-    final case class Class(value: Cls) extends Element
+    final case class Class(value: Cls) extends Success
+    final case class SealedBase(value: data.SealedBase) extends Success
 
     implicit def univEqU: UnivEq[Unrecognised] = UnivEq.derive
     implicit def univEq: UnivEq[Element] = UnivEq.derive

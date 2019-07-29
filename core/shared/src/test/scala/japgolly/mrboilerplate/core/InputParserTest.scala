@@ -83,19 +83,19 @@ object InputParserTest extends TestSuite {
       )
     }
 
-    'crash - {
+    'unsealed - {
       val input =
         """
-          |sealed trait Event
+          |trait Event
           |
           |/** what? */
-          |sealed trait ActiveEvent extends Event
+          |abstract trait ActiveEvent extends Event
           |
           |case class X(i: Int)
         """.stripMargin
       assertParse(input)(
-        Unrecognised("sealed trait Event"),
-        Unrecognised("sealed trait ActiveEvent extends Event"),
+        Unrecognised("trait Event"),
+        Unrecognised("abstract trait ActiveEvent extends Event"),
         Cls("X", Nil, List("i" -> "Int"), Nil)
       )
     }
@@ -111,8 +111,25 @@ object InputParserTest extends TestSuite {
           |  AnyVal
         """.stripMargin
       assertParse(input)(
-        Unrecognised("sealed trait Event"),
-        Unrecognised("sealed trait ActiveEvent[A] extends Event"),
+        SealedBase("Event", Nil, Nil),
+        SealedBase("ActiveEvent", List("A"), List("Event")),
+        Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
+      )
+    }
+
+    'superClasses - {
+      val input =
+        """
+          |sealed abstract class Event
+          |// ah
+          |sealed abstract class ActiveEvent[A](final val aaa: A) extends Event
+          |sealed case class X(i: Int) extends ActiveEvent[List[Int]]
+          | with
+          |  AnyVal
+        """.stripMargin
+      assertParse(input)(
+        SealedBase("Event", Nil, Nil),
+        SealedBase("ActiveEvent", List("A"), List("Event")),
         Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
       )
     }
