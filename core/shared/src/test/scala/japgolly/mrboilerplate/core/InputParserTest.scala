@@ -1,12 +1,13 @@
 package japgolly.mrboilerplate.core
 
+import japgolly.mrboilerplate.core.data._
 import sourcecode.Line
 import utest._
 
 object InputParserTest extends TestSuite {
   import CoreTestUtil._
   import InputParser.Element
-  import InputParser.Element.Unrecognised
+  import InputParser.Element.{AbstractClass, Unrecognised}
   import UnsafeTypes._
 
   private def assertParse(input: String)(expect: Element*)(implicit l: Line): Unit = {
@@ -39,10 +40,10 @@ object InputParserTest extends TestSuite {
         |String)case   class   Type  (v:T)
         |""".stripMargin
       assertParse(input)(
-        Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]")),
-        Cls("Field", Nil, List("name" -> "FieldName", "typ" -> "Type")),
-        Cls("FieldName", Nil, List("value" -> "String")),
-        Cls("Type", Nil, List("v" -> "T")),
+        Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"), Nil),
+        Cls("Field", Nil, List("name" -> "FieldName", "typ" -> "Type"), Nil),
+        Cls("FieldName", Nil, List("value" -> "String"), Nil),
+        Cls("Type", Nil, List("v" -> "T"), Nil),
       )
     }
 
@@ -53,10 +54,7 @@ object InputParserTest extends TestSuite {
         |class Poly[F[_], +A] private (val f: F[A])(implicit x: X) extends Omg[F, A, F]
         |""".stripMargin
       assertParse(input)(
-        Cls(
-          "Poly",
-          List("F[_]", "A"),
-          List("f" -> "F[A]")),
+        Cls("Poly", List("F[_]", "A"), List("f" -> "F[A]"), List("Omg[F, A, F]")),
       )
     }
 
@@ -65,7 +63,7 @@ object InputParserTest extends TestSuite {
       """
         |asdfjhkasgdflkjsa
         |
-        |class TagOf[+N <: TopNode] private[vdom](final val tag: String,
+        |class TagOf[ + N <: TopNode] private[vdom](final val tag: String,
         |                                         final val modifiers: List[Seq[TagMod]],
         |) extends VdomElement {
         |
@@ -75,37 +73,127 @@ object InputParserTest extends TestSuite {
         |}
         |
         |case class HtmlTagOf[+N <: HtmlTopNode](name: String) extends AnyVal with X{self => }
-        |  def a
+        |  defa
         |""".stripMargin
       assertParse(input)(
         Unrecognised("asdfjhkasgdflkjsa"),
-        Cls(
-          "TagOf",
-          List("N"),
-          List("tag" -> "String", "modifiers" -> "List[Seq[TagMod]]")),
-        Cls(
-          "HtmlTagOf",
-          List("N"),
-          List("name" -> "String")),
-        Unrecognised("def a"),
+        Cls("TagOf", List("N"), List("tag" -> "String", "modifiers" -> "List[Seq[TagMod]]"), List("VdomElement")),
+        Cls("HtmlTagOf", List("N"), List("name" -> "String"), List("AnyVal", "X")),
+        Unrecognised("defa"),
       )
     }
 
-    'crash - {
+    'unsealed - {
+      val input =
+        """
+          |trait Event
+          |
+          |/** what? */
+          |abstract trait ActiveEvent extends Event
+          |
+          |// ah
+          |abstract class Y1
+          |// ah
+          |abstract case class Y2()
+          |
+          |case class X(i: Int)
+        """.stripMargin
+      assertParse(input)(
+        Unrecognised("trait Event"),
+        Unrecognised("abstract trait ActiveEvent extends Event"),
+        AbstractClass(Cls("Y1", Nil, Nil, Nil)),
+        AbstractClass(Cls("Y2", Nil, Nil, Nil)),
+        Cls("X", Nil, List("i" -> "Int"), Nil)
+      )
+    }
+
+    'superTraits - {
       val input =
         """
           |sealed trait Event
-          |
-          |/** what? */
-          |sealed trait ActiveEvent extends Event
-          |
-          |case class X(i: Int) extends ActiveEvent
+          |// ah
+          |sealed trait ActiveEvent[A] extends Event
+          |sealed protected case class X(i: Int) extends ActiveEvent[List[Int]]
+          | with
+          |  AnyVal
+        """.stripMargin
+      val x  = Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
+      val ae = SealedBase("ActiveEvent", List("A"), List("Event"), List(x))
+      val e  = SealedBase("Event", Nil, Nil, List(ae))
+      assertParse(input)(e, ae, x)
+    }
+
+    'superClasses - {
+      val input =
+        """
+          |sealed abstract class Event
+          |// ah
+          |sealed abstract class ActiveEvent[A](final val aaa: A) extends Event
+          |sealed case class X(i: Int) extends ActiveEvent[List[Int]]
+          | with
+          |  AnyVal
+        """.stripMargin
+      val x  = Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
+      val ae = SealedBase("ActiveEvent", List("A"), List("Event"), List(x))
+      val e  = SealedBase("Event", Nil, Nil, List(ae))
+      assertParse(input)(e, ae, x)
+    }
+
+    'twoDefs - {
+      val input =
+        """
+          |sealed trait A[+W] {
+          |  def x(): Iterator[X] = Iterator.empty
+          |  def y(): Iterator[Y.Z] = Iterator.empty
+          |}
+          |// ah
+          |sealed trait B[+W] {
+          |  def x(): Iterator[X] = Iterator.empty
+          |  // ah
+          |  def y(): Iterator[Y.Z] = Iterator.empty
+          |}
         """.stripMargin
       assertParse(input)(
-        Unrecognised("sealed trait Event"),
-        Unrecognised("sealed trait ActiveEvent extends Event"),
-        Cls("X", Nil, List("i" -> "Int"))
-      )
+        SealedBase("A", List("W"), Nil, Nil),
+        SealedBase("B", List("W"), Nil, Nil))
+    }
+
+    'annotations - {
+      val input =
+        """
+          |@Lenses sealed trait A
+          |@Lenses case class B()
+        """.stripMargin
+      assertParse(input)(
+        SealedBase("A", Nil, Nil, Nil),
+        Cls("B", Nil, Nil, Nil))
+    }
+
+    'decls - {
+      val input =
+        """
+          |type A = X
+          |  implicit def univEq[WSR: UnivEq]: UnivEq[Action[WSR]] = UnivEq.derive
+          |  implicit val univEqFlat: UnivEq[Flat]                 = UnivEq.derive
+          |case class B()
+        """.stripMargin
+      assertParse(input)(Cls("B", Nil, Nil, Nil))
+    }
+
+    'nested - {
+      val input =
+        """
+          |object O {
+          |  case class B()
+          |  wtf
+          |}
+          |case class C()
+        """.stripMargin
+      assertParse(input)(
+        Unrecognised("object O {"),
+        Cls("B", Nil, Nil, Nil),
+        Unrecognised("wtf"),
+        Cls("C", Nil, Nil, Nil))
     }
 
   }

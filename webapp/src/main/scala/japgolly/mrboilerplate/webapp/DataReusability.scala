@@ -1,7 +1,8 @@
 package japgolly.mrboilerplate.webapp
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.mrboilerplate.core.{Cls, InputParser}
+import japgolly.mrboilerplate.core.InputParser
+import japgolly.mrboilerplate.core.data._
 import japgolly.mrboilerplate.core.gen.Generator
 import japgolly.scalajs.react.Reusability
 import japgolly.univeq.UnivEq
@@ -27,7 +28,16 @@ object DataReusability {
   implicit def reusabilityInputParserUnrecognised: Reusability[InputParser.Element.Unrecognised] =
     byRefOrUnivEq
 
+  implicit def reusabilityInputParserSuccess: Reusability[InputParser.Element.Success] =
+    byRefOrUnivEq
+
+  implicit def reusabilityInputParserFailure: Reusability[InputParser.Element.Failure] =
+    byRefOrUnivEq
+
   implicit def reusabilityInputParserElement: Reusability[InputParser.Element] =
+    byRefOrUnivEq
+
+  implicit def reusabilityTypeDef: Reusability[TypeDef] =
     byRefOrUnivEq
 
 }

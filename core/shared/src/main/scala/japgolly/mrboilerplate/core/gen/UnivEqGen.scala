@@ -1,7 +1,6 @@
 package japgolly.mrboilerplate.core.gen
 
-import japgolly.mrboilerplate.core.Cls
-import japgolly.mrboilerplate.core.StringUtils._
+import japgolly.mrboilerplate.core.data._
 import monocle.macros.Lenses
 
 object UnivEqGen extends Generator {
@@ -11,20 +10,17 @@ object UnivEqGen extends Generator {
   @Lenses
   final case class Options(oneLine: Boolean)
 
-  override def generate(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
-    import cls._
+  override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = td => {
+    import td._
 
-    val suffix =
-      if (glopt.shortInstanceNames)
-        ""
-      else
-        name.withHeadUpper
+    val suffix = termSuffix(glopt)
+
+    val defn = s"implicit def univEq$suffix${typeParamDefsAndEvTC("UnivEq")}: UnivEq[$nameWithTypesApplied]"
 
     val sep = if (opt.oneLine) " " else "\n  "
 
-    val decl = s"implicit $valDef univEq$suffix${typeParamDefsAndEvTC("UnivEq")}: UnivEq[$nameWithTypesApplied] =${sep}UnivEq.derive"
+    val decl = s"$defn =${sep}UnivEq.derive"
 
     decl :: Nil
-
   }
 }

@@ -1,5 +1,6 @@
 package japgolly.mrboilerplate.webapp
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.mrboilerplate.core.gen._
 import japgolly.mrboilerplate.webapp.DataReusability._
@@ -22,6 +23,13 @@ object GeneratorsComponent {
   final case class State(enabled: Set[GeneratorDef],
                          options: List[Generator.AndOptions],
                          glopt: GlobalOptions) {
+
+    val enabledWithOptions: List[Generator.AndOptions] =
+      MutableArray(enabled)
+        .sortBy(_.title)
+        .iterator
+        .map(g => g.gen.andOptions(optionsFor(g)))
+        .toList
 
     def toggle(gd: GeneratorDef): State =
       copy(if (enabled.contains(gd)) enabled - gd else enabled + gd)
