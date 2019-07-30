@@ -1,5 +1,6 @@
 package japgolly.mrboilerplate.core.data
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.Memo
 import japgolly.mrboilerplate.core.MaxLen
 import japgolly.mrboilerplate.core.StringUtils._
@@ -66,6 +67,18 @@ final case class SealedBase(name            : String,
   override def typeParamDefsAndEvTC(tc: String) =
     typeParamDefs
 
+  lazy val nonAbstractTransitiveChildren: List[Cls] =
+    MutableArray(
+    directChildren
+      .toIterator
+      .flatMap {
+        case s: SealedBase => s.nonAbstractTransitiveChildren
+        case c: Cls => c :: Nil
+      }
+    ).sortBy(_.name).to[List]
+
+  lazy val nonAbstractTransitiveChildrenMaxLen: MaxLen =
+    MaxLen.derive(nonAbstractTransitiveChildren.map(_.name))
 }
 
 object SealedBase {

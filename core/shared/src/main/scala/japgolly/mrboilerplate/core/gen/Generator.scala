@@ -8,6 +8,9 @@ trait Generator { self =>
 
   val title: String
 
+  def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions): List[String] =
+    Nil
+
   def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String]
 
   final type AndOptions = Generator.AndOptions { val gen: self.type }
@@ -30,7 +33,7 @@ object Generator {
       Option.when(g eq gen)(this.asInstanceOf[g.AndOptions])
   }
 
-  final def apply(gens: Traversable[AndOptions], data: TraversableOnce[TypeDef], go: GlobalOptions): String = {
+  final def apply(gens: Traversable[AndOptions], data: Traversable[TypeDef], go: GlobalOptions): String = {
 
     val preparedGens: List[TypeDef => List[String]] =
       gens.toIterator.map(g => g.gen.gen(g.options, go)).toList
@@ -38,34 +41,43 @@ object Generator {
     def gen(td: TypeDef): Iterator[String] =
       preparedGens.toIterator.flatMap(_(td))
 
-    if (go.generateCompanions) {
-      // Order doesn't matter
-      data.toIterator.flatMap { td =>
-        val decls = gen(td).mkString("\n\n")
-        if (decls.nonEmpty)
-          s"""
-             |object ${td.name} {
-             |${decls.indent(2)}
-             |}
-               """.stripMargin.trim :: Nil
-        else
-          Nil
-      }.mkString("\n\n")
+    val body: String =
+      if (go.generateCompanions) {
+        // Order doesn't matter
+        data.toIterator.flatMap { td =>
+          val decls = gen(td).mkString("\n\n")
+          if (decls.nonEmpty)
+            s"""
+               |object ${td.name} {
+               |${decls.indent(2)}
+               |}
+                 """.stripMargin.trim :: Nil
+          else
+            Nil
+        }.mkString("\n\n")
 
 
-    } else {
-      // Order matters; generate dependants first
-      val r1 = List.newBuilder[String]
-      val r2 = List.newBuilder[String]
+      } else {
+        // Order matters; generate dependants first
+        val r1 = List.newBuilder[String]
+        val r2 = List.newBuilder[String]
 
-      data.foreach  {
-        case s: SealedBase => r1 ++= gen(s)
-        case c: Cls        => r2 ++= gen(c)
+        data.foreach  {
+          case c: Cls        => r1 ++= gen(c)
+          case s: SealedBase => r2 ++= gen(s) // needs to be last
+        }
+
+        r1 ++= r2.result()
+        r1.result().mkString("\n\n")
       }
 
-      r1 ++= r2.result()
-      r1.result().mkString("\n\n")
-    }
+    val header = gens.toIterator.flatMap(g => g.gen.helperFns(data, g.options, go)).mkString("\n\n")
+
+    if (header.isEmpty)
+      body
+    else
+      header + seperator + body
   }
 
+  private val seperator = "\n\n// " + ("="*97) + "\n\n"
 }

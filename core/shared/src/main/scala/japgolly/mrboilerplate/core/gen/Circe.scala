@@ -11,22 +11,24 @@ object Circe extends Generator {
   @Lenses
   final case class Options(singlesAsObjects: Boolean,
                            monadicObjects: Boolean,
-                           keyConstants: Boolean)
+                           keyConstants: Boolean,
+                          )
 
   override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = {
     case c: Cls        => genCls(c, opt, glopt)
     case s: SealedBase => genSB(s, opt, glopt)
   }
 
+  // ===================================================================================================================
+
   private def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
     import cls._
 
     val suffix = termSuffix(glopt)
 
-    val apply =
-      name + ".apply"
+    def apply = name + ".apply"
 
-    val unapply =
+    def unapply =
       fields match {
         case f :: Nil => "_." + f.name
         case fs       => fs.map("a." + _.name).mkString("a => (", ", ", ")")
@@ -40,12 +42,6 @@ object Circe extends Generator {
 
     def quoteOrKeyPad(f: FieldName) =
       if (opt.keyConstants) mkKey(f.pad) else f.quotePad
-
-    val fieldNameStrsOrKeys =
-      if (opt.keyConstants)
-        fields.map(f => mkKey(f.name.value)).mkString(", ")
-      else
-        fieldNameStrs
 
     val (decoderBody, encoderBody) =
       fieldCount match {
@@ -79,22 +75,20 @@ object Circe extends Generator {
           (d, e)
 
         case _ =>
+          val fieldNameStrsOrKeys =
+            if (opt.keyConstants)
+              fields.map(f => mkKey(f.name.value)).mkString(", ")
+            else
+              fieldNameStrs
           val d = s"Decoder.forProduct${fields.size}($fieldNameStrsOrKeys)($apply)"
           val e = s"Encoder.forProduct${fields.size}($fieldNameStrsOrKeys)($unapply)"
           (d, e)
       }
 
-    val decoder =
-      s"""
-         |implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$nameWithTypesApplied] =
-         |  $decoderBody
-         |""".stripMargin.trim
+    val (decoderDecl, encoderDecl) = mkDecls(cls, suffix, decoderBody, encoderBody)
 
-    val encoder =
-      s"""
-         |implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$nameWithTypesApplied] =
-         |  $encoderBody
-         |""".stripMargin.trim
+    val decoder = s"$decoderDecl =\n  $decoderBody"
+    val encoder = s"$encoderDecl =\n  $encoderBody"
 
     if (opt.keyConstants) {
       val keys = fields.iterator.map(f => s"private final val ${mkKey(f.name.pad)} = ${f.name.quote}").mkString("\n")
@@ -103,8 +97,74 @@ object Circe extends Generator {
       decoder :: encoder :: Nil
   }
 
+  // ===================================================================================================================
+
   private def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
-    Nil
+    import sb.{nonAbstractTransitiveChildrenMaxLen => clsMaxLen, _}
+
+    val suffix = termSuffix(glopt)
+
+    def keyFor(c: Cls) = clsMaxLen.pad2("\"" + c.name.withHeadLower + "\"")
+
+    val decoderBody = {
+      def mkCase(c: Cls) = s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
+      s"""
+        |decodeSumBySoleKey {
+        |${nonAbstractTransitiveChildren.map(mkCase).mkString("\n")}
+        |}
+      """.stripMargin.trim
+    }
+
+    val encoderBody = {
+      def mkCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
+      s"""
+         |Encoder.instance {
+         |${nonAbstractTransitiveChildren.map(mkCase).mkString("\n")}
+         |}
+      """.stripMargin.trim
+    }
+
+    val (decoderDecl, encoderDecl) = mkDecls(sb, suffix, decoderBody, encoderBody)
+
+    val decoder = s"$decoderDecl = $decoderBody"
+    val encoder = s"$encoderDecl = $encoderBody"
+
+    decoder :: encoder :: Nil
   }
 
+  // ===================================================================================================================
+
+  private def mkDecls(td: TypeDef, suffix: String, decoderBody: String, encoderBody: String): (String, String) = {
+    import td._
+    val d = s"implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$nameWithTypesApplied]"
+    val e = s"implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$nameWithTypesApplied]"
+    (d, e)
+  }
+
+  override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) =
+    if (data.exists(_.isInstanceOf[SealedBase]))
+      decodeSumBySoleKey :: Nil
+    else
+      Nil
+
+  private val decodeSumBySoleKey =
+    """
+      |def decodeSumBySoleKey[A](f: PartialFunction[(String, ACursor), Decoder.Result[A]]): Decoder[A] = {
+      |  def keyErr = "Expected a single key indicating the subtype"
+      |  Decoder.instance { c =>
+      |    c.keys match {
+      |      case Some(it) =>
+      |        it.toList match {
+      |          case singleKey :: Nil =>
+      |            val arg  = (singleKey, c.downField(singleKey))
+      |            def fail = Left(DecodingFailure("Unknown subtype: " + singleKey, c.history))
+      |            f.applyOrElse(arg, (_: (String, ACursor)) => fail)
+      |          case Nil  => Left(DecodingFailure(keyErr, c.history))
+      |          case keys => Left(DecodingFailure(s"$keyErr, found multiple: $keys", c.history))
+      |        }
+      |      case None => Left(DecodingFailure(keyErr, c.history))
+      |    }
+      |  }
+      |}
+    """.stripMargin.trim
 }
