@@ -11,12 +11,12 @@ object UnivEqGen extends Generator {
   final case class Options(oneLine: Boolean)
 
   override def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] =
-    gen(cls, opt, glopt)
+    gen2(cls, opt, glopt)
 
   override def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] =
-    gen(sb, opt, glopt)
+    gen2(sb, opt, glopt)
 
-  private def gen(td: TypeDef, opt: Options, glopt: GlobalOptions): List[String] = {
+  private def gen2(td: TypeDef, opt: Options, glopt: GlobalOptions): List[String] = {
     import td._
 
     val suffix = termSuffix(glopt)

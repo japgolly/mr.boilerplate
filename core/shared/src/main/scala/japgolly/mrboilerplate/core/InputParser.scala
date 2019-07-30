@@ -196,6 +196,8 @@ object InputParser {
     final case class AbstractClass(value: Cls) extends Failure
 
     implicit def univEqU: UnivEq[Unrecognised] = UnivEq.derive
+    implicit def univEqF: UnivEq[Failure] = UnivEq.derive
+    implicit def univEqS: UnivEq[Success] = UnivEq.derive
     implicit def univEq: UnivEq[Element] = UnivEq.derive
   }
 }

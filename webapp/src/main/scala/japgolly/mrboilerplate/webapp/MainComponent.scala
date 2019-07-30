@@ -2,6 +2,7 @@ package japgolly.mrboilerplate.webapp
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.mrboilerplate.core.InputParser
+import japgolly.mrboilerplate.core.gen.Generator
 import japgolly.mrboilerplate.webapp.DataReusability._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -36,34 +37,14 @@ object MainComponent {
     private val pxInput    = Px.state($).map(_.input).withReuse.autoRefresh
     private val pxGen      = Px.state($).map(_.gen).withReuse.autoRefresh
     private val pxParsed   = pxInput.map(InputParser.parse).withReuse
-    private val pxParsedOK = pxParsed.map(_.iterator.map(_.success).filterDefined.to[ListSet]).withReuse
+    private val pxParsedOK = pxParsed.map(_.iterator.map(_.success).filterDefined.map(_.value).to[ListSet]).withReuse
     private val pxParsedKO = pxParsed.map(_.iterator.map(_.failure).filterDefined.to[List]).withReuse
 
     private val pxOutput =
       for {
-        classes <- pxParsedOK
-        gen     <- pxGen
-      } yield {
-        // TODO do this properly somewhere and test it
-        val glopt = gen.glopt
-        classes.iterator.map { cls =>
-
-          val decls =
-            gen.enabled.iterator.flatMap { gd =>
-              val opt = gen.optionsFor(gd)
-              gd.gen.genCls(cls, opt, glopt)
-            }.mkString("\n\n")
-
-          if (glopt.generateCompanions && decls.nonEmpty) {
-            s"""
-               |object ${cls.name} {
-               |${decls.indent(2)}
-               |}
-             """.stripMargin.trim
-          } else
-            decls
-        }.filter(_.nonEmpty).mkString("\n\n")
-      }
+        gen  <- pxGen
+        data <- pxParsedOK
+      } yield Generator(gen.enabledWithOptions, data, gen.glopt)
 
     def render(p: Props, s: State): VdomElement = {
       <.div(
