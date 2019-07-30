@@ -21,11 +21,11 @@ object CirceTest extends TestSuite {
   )
 
   private def assertGenCls(cls: Cls,
-                        opt: Circe.Options = circeOptions,
-                        glopt: GlobalOptions = globalOptions,
-                       )(expect: String*)
+                           opt: Circe.Options = circeOptions,
+                           glopt: GlobalOptions = globalOptions,
+                          )(expect: String*)
                        (implicit l: Line): Unit = {
-    val actual = Circe.genCls(cls, opt, glopt)
+    val actual = Circe.gen(opt, glopt)(cls)
     assertSeq(actual, expect.map(_.trim))
   }
 

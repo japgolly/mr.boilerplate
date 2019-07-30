@@ -8,14 +8,7 @@ trait Generator { self =>
 
   val title: String
 
-  def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String]
-  def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String]
-
-  final def gen(t: TypeDef, opt: Options, glopt: GlobalOptions): List[String] =
-    t match {
-      case c: Cls        => genCls(c, opt, glopt)
-      case s: SealedBase => genSB(s, opt, glopt)
-    }
+  def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String]
 
   final type AndOptions = Generator.AndOptions { val gen: self.type }
 
@@ -39,8 +32,11 @@ object Generator {
 
   final def apply(gens: Traversable[AndOptions], data: TraversableOnce[TypeDef], go: GlobalOptions): String = {
 
+    val preparedGens: List[TypeDef => List[String]] =
+      gens.toIterator.map(g => g.gen.gen(g.options, go)).toList
+
     def gen(td: TypeDef): Iterator[String] =
-      gens.toIterator.flatMap(g => g.gen.gen(td, g.options, go))
+      preparedGens.toIterator.flatMap(_(td))
 
     if (go.generateCompanions) {
       // Order doesn't matter

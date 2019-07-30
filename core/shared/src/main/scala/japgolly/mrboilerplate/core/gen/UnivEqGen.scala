@@ -10,20 +10,14 @@ object UnivEqGen extends Generator {
   @Lenses
   final case class Options(oneLine: Boolean)
 
-  override def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] =
-    gen2(cls, opt, glopt)
-
-  override def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] =
-    gen2(sb, opt, glopt)
-
-  private def gen2(td: TypeDef, opt: Options, glopt: GlobalOptions): List[String] = {
+  override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = td => {
     import td._
 
     val suffix = termSuffix(glopt)
 
-    val sep = if (opt.oneLine) " " else "\n  "
-
     val defn = s"implicit def univEq$suffix${typeParamDefsAndEvTC("UnivEq")}: UnivEq[$nameWithTypesApplied]"
+
+    val sep = if (opt.oneLine) " " else "\n  "
 
     val decl = s"$defn =${sep}UnivEq.derive"
 

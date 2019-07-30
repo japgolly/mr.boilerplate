@@ -13,7 +13,12 @@ object Circe extends Generator {
                            monadicObjects: Boolean,
                            keyConstants: Boolean)
 
-  override def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
+  override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = {
+    case c: Cls        => genCls(c, opt, glopt)
+    case s: SealedBase => genSB(s, opt, glopt)
+  }
+
+  private def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
     import cls._
 
     val suffix = termSuffix(glopt)
@@ -98,7 +103,7 @@ object Circe extends Generator {
       decoder :: encoder :: Nil
   }
 
-  override def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
+  private def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
     Nil
   }
 
