@@ -73,13 +73,13 @@ object InputParserTest extends TestSuite {
         |}
         |
         |case class HtmlTagOf[+N <: HtmlTopNode](name: String) extends AnyVal with X{self => }
-        |  def a
+        |  defa
         |""".stripMargin
       assertParse(input)(
         Unrecognised("asdfjhkasgdflkjsa"),
         Cls("TagOf", List("N"), List("tag" -> "String", "modifiers" -> "List[Seq[TagMod]]"), List("VdomElement")),
         Cls("HtmlTagOf", List("N"), List("name" -> "String"), List("AnyVal", "X")),
-        Unrecognised("def a"),
+        Unrecognised("defa"),
       )
     }
 
@@ -137,6 +137,63 @@ object InputParserTest extends TestSuite {
       val ae = SealedBase("ActiveEvent", List("A"), List("Event"), List(x))
       val e  = SealedBase("Event", Nil, Nil, List(ae))
       assertParse(input)(e, ae, x)
+    }
+
+    'twoDefs - {
+      val input =
+        """
+          |sealed trait A[+W] {
+          |  def x(): Iterator[X] = Iterator.empty
+          |  def y(): Iterator[Y.Z] = Iterator.empty
+          |}
+          |// ah
+          |sealed trait B[+W] {
+          |  def x(): Iterator[X] = Iterator.empty
+          |  // ah
+          |  def y(): Iterator[Y.Z] = Iterator.empty
+          |}
+        """.stripMargin
+      assertParse(input)(
+        SealedBase("A", List("W"), Nil, Nil),
+        SealedBase("B", List("W"), Nil, Nil))
+    }
+
+    'annotations - {
+      val input =
+        """
+          |@Lenses sealed trait A
+          |@Lenses case class B()
+        """.stripMargin
+      assertParse(input)(
+        SealedBase("A", Nil, Nil, Nil),
+        Cls("B", Nil, Nil, Nil))
+    }
+
+    'decls - {
+      val input =
+        """
+          |type A = X
+          |  implicit def univEq[WSR: UnivEq]: UnivEq[Action[WSR]] = UnivEq.derive
+          |  implicit val univEqFlat: UnivEq[Flat]                 = UnivEq.derive
+          |case class B()
+        """.stripMargin
+      assertParse(input)(Cls("B", Nil, Nil, Nil))
+    }
+
+    'nested - {
+      val input =
+        """
+          |object O {
+          |  case class B()
+          |  wtf
+          |}
+          |case class C()
+        """.stripMargin
+      assertParse(input)(
+        Unrecognised("object O {"),
+        Cls("B", Nil, Nil, Nil),
+        Unrecognised("wtf"),
+        Cls("C", Nil, Nil, Nil))
     }
 
   }

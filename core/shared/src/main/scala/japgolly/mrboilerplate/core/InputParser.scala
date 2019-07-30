@@ -1,7 +1,6 @@
 package japgolly.mrboilerplate.core
 
 import fastparse._
-import fastparse.MultiLineWhitespace._
 import japgolly.mrboilerplate.core.data._
 import japgolly.univeq.UnivEq
 
@@ -24,6 +23,8 @@ object InputParser {
       with scalaparse.Types
       with scalaparse.Exprs {
 
+    import fastparse.ScalaWhitespace._
+
     def TypeArg2[_: P]: P[Type] = {
       def CtxBounds = P((`<%` ~/ Type).rep ~ (`:` ~/ Type).rep)
       P(((Id | `_`) ~ TypeArgList.?).!.map(s => data.Type(s.trim)) ~ TypeBounds ~ CtxBounds)
@@ -36,7 +37,8 @@ object InputParser {
 
     def TmplBody[_: P]: P[Unit] = {
       def Prelude = P( (Annot ~ OneNLMax).rep ~ Mod./.rep )
-      def TmplStat = P( Import | Prelude ~ BlockDef | StatCtx.Expr )
+      // def TmplStat = P( Import | (Prelude ~ BlockDef) | StatCtx.Expr )
+      def TmplStat = P(Import | Prelude ~ (Dcl | ObjDef) | StatCtx.Expr)
 
       P( "{" ~/ BlockLambda.? ~ Semis.? ~ TmplStat.repX(sep = NoCut(Semis)) ~ Semis.? ~ `}` )
     }
@@ -102,6 +104,8 @@ object InputParser {
 
   // ===================================================================================================================
 
+  import fastparse.MultiLineWhitespace._
+
   private def flags[_: P]: P[Flags] =
     P(Scala.Mod.rep.!.map(Flags.fromStr))
 
@@ -141,13 +145,13 @@ object InputParser {
     }
 
   private def ignore[_: P]: P[Unit] =
-    P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment)
+    P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment | Scala.Annot | (Scala.Mod.rep ~ Scala.Dcl))
 
   private def recognised[_: P]: P[Element] =
     P(cls | sealedTrait | ignore.rep(1).map(_ => Element.Empty))
 
   private def unrecognised[_: P]: P[Element] =
-    P((!recognised ~~ (CharPred(_.isWhitespace) | CharsWhile(!_.isWhitespace))).rep.!.map(t => Element.Unrecognised(t.trim)))
+    P((!recognised ~~ (CharPred(_.isWhitespace) | CharsWhile(!_.isWhitespace))).rep.!.map(Element.Unrecognised(_)))
 
   private def main[_: P]: P[Iterator[Element]] =
     P((unrecognised ~ recognised).rep ~ unrecognised ~ End)
@@ -194,6 +198,14 @@ object InputParser {
     final case class Success(value: data.TypeDef) extends Element
     final case class Unrecognised(text: String) extends Failure
     final case class AbstractClass(value: Cls) extends Failure
+
+    object Unrecognised {
+      def apply(s: String): Unrecognised = {
+        // "Performance"? Never heard of it!
+        val t = s.trim.split("\n").reverse.dropWhile(_.matches("^[\\s}]*$")).reverse.mkString("\n").trim
+        new Unrecognised(t)
+      }
+    }
 
     implicit def univEqU: UnivEq[Unrecognised] = UnivEq.derive
     implicit def univEqF: UnivEq[Failure] = UnivEq.derive
