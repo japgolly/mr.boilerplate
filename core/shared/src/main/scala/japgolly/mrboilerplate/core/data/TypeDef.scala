@@ -44,16 +44,23 @@ sealed trait TypeDef {
     name + typeParamAp
 }
 
+object TypeDef {
+  implicit def univEq: UnivEq[TypeDef] = UnivEq.derive
+}
+
 // =====================================================================================================================
 
-final case class SealedBase(name      : String,
-                            typeParams: List[Type],
-                            superTypes: List[Type]) extends TypeDef {
+final case class SealedBase(name            : String,
+                            typeParams      : List[Type],
+                            superTypes      : List[Type],
+                            directChildren  : List[TypeDef],
+                           ) extends TypeDef {
 
   override def toString: String = {
     val tp = if (typeParams.isEmpty) "" else typeParams.mkString("[", ", ", "]")
     val ex = if (superTypes.isEmpty) "" else superTypes.mkString(" extends ", " with ", "")
-    s"sealed _____ $name$tp$ex"
+    val dc = if (directChildren.isEmpty) "" else s" (children=${directChildren.mkString(", ")})"
+    s"sealed $name$tp$ex$dc"
   }
 
   override def typeParamDefsAndEvTC(tc: String) =

@@ -109,10 +109,11 @@ object InputParser {
     P(flags ~ Scala.ClsDef).map {
       case (f, (name, types, fields, sup)) =>
         if (f.isSealed && f.isAbstract)
-          Element.SealedBase(SealedBase(
-            name       = name,
-            typeParams = types.iterator.flatten.toList,
-            superTypes = sup.toList,
+          Element.Success(SealedBase(
+            name           = name,
+            typeParams     = types.iterator.flatten.toList,
+            superTypes     = sup.toList,
+            directChildren = Nil,
           ))
         else {
           val cls = Cls(
@@ -124,17 +125,18 @@ object InputParser {
           if (f.isAbstract)
             Element.AbstractClass(cls)
           else
-            Element.Class(cls)
+            Element.Success(cls)
         }
     }
 
   private def sealedTrait[_: P]: P[Element] =
     P(flags.filter(_.isSealed) ~ Scala.TraitDef).map {
       case (_, (name, types, sup)) =>
-        Element.SealedBase(SealedBase(
-          name       = name,
-          typeParams = types.iterator.flatten.toList,
-          superTypes = sup.toList,
+        Element.Success(SealedBase(
+          name           = name,
+          typeParams     = types.iterator.flatten.toList,
+          superTypes     = sup.toList,
+          directChildren = Nil,
         ))
     }
 
@@ -153,7 +155,7 @@ object InputParser {
 
   // ===================================================================================================================
 
-  def parse(t: String): List[Element] =
+  private def justParse(t: String): List[Element] =
     fastparse.parse(t, main(_)) match {
       case Parsed.Success(value, _) =>
         value
@@ -169,6 +171,11 @@ object InputParser {
         Element.Unrecognised(t) :: Nil
     }
 
+  def parse(t: String): List[Element] = {
+    val es = justParse(t)
+    PostProcess(es)(_.success.map(_.value), Element.Success)
+  }
+
   sealed trait Element {
     final def success: Option[Element.Success] = this match {
       case s: Element.Success => Some(s)
@@ -182,11 +189,9 @@ object InputParser {
     }
   }
   object Element {
-    sealed trait Success extends Element
     sealed trait Failure extends Element
     case object Empty extends Element
-    final case class Class(value: Cls) extends Success
-    final case class SealedBase(value: data.SealedBase) extends Success
+    final case class Success(value: data.TypeDef) extends Element
     final case class Unrecognised(text: String) extends Failure
     final case class AbstractClass(value: Cls) extends Failure
 

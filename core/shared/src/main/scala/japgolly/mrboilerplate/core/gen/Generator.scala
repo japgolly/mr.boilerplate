@@ -15,17 +15,17 @@ trait Generator { self =>
   final def gen(parts: TraversableOnce[InputParser.Element.Success], o: Options, go: GlobalOptions): List[String] =
     if (go.generateCompanions)
       // Order doesn't matter
-      parts.toIterator.flatMap {
-        case InputParser.Element.Class(c)       => genCls(c, o, go)
-        case InputParser.Element.SealedBase(sb) => genSB(sb, o, go)
+      parts.toIterator.map(_.value).flatMap {
+        case c: Cls         => genCls(c, o, go)
+        case sb: SealedBase => genSB(sb, o, go)
       }.toList
     else {
       // Order matters; generate dependants first
       val r1 = List.newBuilder[String]
       val r2 = List.newBuilder[String]
-      parts.foreach  {
-        case InputParser.Element.Class(c)       => r1 ++= genCls(c, o, go)
-        case InputParser.Element.SealedBase(sb) => r2 ++= genSB(sb, o, go)
+      parts.toIterator.map(_.value).foreach  {
+        case c: Cls         => r1 ++= genCls(c, o, go)
+        case sb: SealedBase => r2 ++= genSB(sb, o, go)
       }
       r1 ++= r2.result()
       r1.result()

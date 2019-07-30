@@ -6,7 +6,8 @@ import japgolly.univeq.UnivEq
 final case class Type(value: String) {
   override def toString = value
   def withoutWildcards = value.withoutWildcards
-  val isHK = value.contains('[') && value.contains('_')
+  def head = value.takeWhile(_ != '[')
+  val isHK = value.contains('[')
 
   def contains(t: Type): Boolean =
     t.findRegex.pattern.matcher(value).find
@@ -16,6 +17,9 @@ final case class Type(value: String) {
       s"\\b${value.withoutWildcards.quoteForRegex}\\b\\s*\\[".r
     else
       s"\\b${value.quoteForRegex}\\b".r
+
+  def isInstanceOfType(t: Type): Boolean =
+    t.head == this.head
 }
 
 object Type {

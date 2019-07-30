@@ -18,8 +18,8 @@ object UnsafeTypes {
     (cbf.apply() ++= s.toIterator.map(f)).result()
 
   implicit def inputParserElementC(a: Cls): InputParser.Element =
-    InputParser.Element.Class(a)
+    InputParser.Element.Success(a)
 
   implicit def inputParserElementS(a: SealedBase): InputParser.Element =
-    InputParser.Element.SealedBase(a)
+    InputParser.Element.Success(a)
 }

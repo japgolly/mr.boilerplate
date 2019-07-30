@@ -117,11 +117,10 @@ object InputParserTest extends TestSuite {
           | with
           |  AnyVal
         """.stripMargin
-      assertParse(input)(
-        SealedBase("Event", Nil, Nil),
-        SealedBase("ActiveEvent", List("A"), List("Event")),
-        Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
-      )
+      val x  = Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
+      val ae = SealedBase("ActiveEvent", List("A"), List("Event"), List(x))
+      val e  = SealedBase("Event", Nil, Nil, List(ae))
+      assertParse(input)(e, ae, x)
     }
 
     'superClasses - {
@@ -134,11 +133,10 @@ object InputParserTest extends TestSuite {
           | with
           |  AnyVal
         """.stripMargin
-      assertParse(input)(
-        SealedBase("Event", Nil, Nil),
-        SealedBase("ActiveEvent", List("A"), List("Event")),
-        Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
-      )
+      val x  = Cls("X", Nil, List("i" -> "Int"), List("ActiveEvent[List[Int]]", "AnyVal"))
+      val ae = SealedBase("ActiveEvent", List("A"), List("Event"), List(x))
+      val e  = SealedBase("Event", Nil, Nil, List(ae))
+      assertParse(input)(e, ae, x)
     }
 
   }
