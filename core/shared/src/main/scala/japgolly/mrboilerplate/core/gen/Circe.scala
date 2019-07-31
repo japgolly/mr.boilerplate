@@ -1,8 +1,11 @@
 package japgolly.mrboilerplate.core.gen
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.mrboilerplate.core.data._
 import japgolly.mrboilerplate.core.StringUtils._
+import japgolly.mrboilerplate.core.gen.Circe.Options.SumTypeFormat
 import monocle.macros.Lenses
+import japgolly.univeq._
 
 object Circe extends Generator {
 
@@ -12,7 +15,17 @@ object Circe extends Generator {
   final case class Options(singlesAsObjects: Boolean,
                            monadicObjects: Boolean,
                            keyConstants: Boolean,
+                           sumTypes: Options.SumTypeFormat,
                           )
+
+  object Options {
+    sealed trait SumTypeFormat
+    object SumTypeFormat {
+      case object TypeToValue extends SumTypeFormat
+      implicit def univEq: UnivEq[SumTypeFormat] = UnivEq.derive
+      val values = AdtMacros.adtValues[SumTypeFormat]
+    }
+  }
 
   override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = {
     case c: Cls        => genCls(c, opt, glopt)
@@ -106,23 +119,23 @@ object Circe extends Generator {
 
     def keyFor(c: Cls) = clsMaxLen.pad2("\"" + c.name.withHeadLower + "\"")
 
-    val decoderBody = {
-      def mkCase(c: Cls) = s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
-      s"""
-        |decodeSumBySoleKey {
-        |${nonAbstractTransitiveChildren.map(mkCase).mkString("\n")}
-        |}
-      """.stripMargin.trim
-    }
-
-    val encoderBody = {
-      def mkCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
-      s"""
-         |Encoder.instance {
-         |${nonAbstractTransitiveChildren.map(mkCase).mkString("\n")}
-         |}
-      """.stripMargin.trim
-    }
+    val (decoderBody, encoderBody) =
+      opt.sumTypes match {
+        case SumTypeFormat.TypeToValue =>
+          def decCase(c: Cls) = s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
+          val d =
+            s"""
+               |decodeSumBySoleKey {
+               |${nonAbstractTransitiveChildren.map(decCase).mkString("\n")}
+               |}""".stripMargin.trim
+          def encCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
+          val e =
+            s"""
+               |Encoder.instance {
+               |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
+               |}""".stripMargin.trim
+          (d, e)
+      }
 
     val (decoderDecl, encoderDecl) = mkDecls(sb, suffix, decoderBody, encoderBody)
 
@@ -142,7 +155,7 @@ object Circe extends Generator {
   }
 
   override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) =
-    if (data.exists(_.isInstanceOf[SealedBase]))
+    if (data.exists(_.isInstanceOf[SealedBase]) && opt.sumTypes ==* Options.SumTypeFormat.TypeToValue)
       decodeSumBySoleKey :: Nil
     else
       Nil

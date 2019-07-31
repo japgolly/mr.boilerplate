@@ -2,10 +2,13 @@ package japgolly.mrboilerplate.webapp
 
 import monocle.Lens
 import japgolly.microlibs.adt_macros.AdtMacros
+import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.mrboilerplate.core.gen._
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
-import japgolly.univeq.UnivEq
+import japgolly.univeq._
+import org.scalajs.dom.html
 
 sealed trait GeneratorDef {
   val gen: Generator
@@ -37,6 +40,9 @@ object GeneratorDef {
         checkbox(s)(Circe.Options.singlesAsObjects, "Encode single-field as single-key objects"),
         checkbox(s)(Circe.Options.monadicObjects  , "Monadic object codecs"),
         checkbox(s)(Circe.Options.keyConstants    , "Constants for object keys"),
+        select(s)(Circe.Options.sumTypes          , "Sum-type format", Circe.Options.SumTypeFormat.values) {
+          case Circe.Options.SumTypeFormat.TypeToValue => """{"<type>":"<value>"}"""
+        },
       )
   }
 
@@ -72,4 +78,31 @@ object GeneratorDef {
           ^.checked := l.get(s.value),
           ^.onChange --> s.modState(l.modify(!_))),
         txt))
+
+  private val checkboxOn = <.input.checkbox(Styles.checkbox, ^.readOnly := true, ^.disabled := true, ^.checked := true)
+
+  private def select[O, A](s: StateSnapshot[O])(l: Lens[O, A], label: String, options: NonEmptyVector[A])
+                          (optionLabel: A => String) = {
+
+    def onChange(e: ReactEventFrom[html.Select]): Callback =
+      for {
+        v <- CallbackTo(e.target.value).toCBO
+        a <- CallbackOption.liftOption(options.whole.find(optionLabel(_) ==* v))
+        _ <- s.modState(l.set(a)).toCBO
+      } yield ()
+
+    <.div(
+      ^.marginTop := "0.1em",
+      <.label(
+        checkboxOn,
+        label + ": ",
+        <.select(
+          ^.fontFamily := "monospace",
+          ^.value := optionLabel(l.get(s.value)),
+          ^.onChange ==> onChange,
+          options.whole.iterator.map(optionLabel).toTagMod(s =>
+            <.option(
+              ^.value := s,
+              s + " ")))))
+  }
 }

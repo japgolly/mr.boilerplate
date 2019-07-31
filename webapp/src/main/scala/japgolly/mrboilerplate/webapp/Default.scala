@@ -22,6 +22,7 @@ object Default {
         singlesAsObjects = true,
         monadicObjects = false,
         keyConstants = false,
+        sumTypes = Circe.Options.SumTypeFormat.TypeToValue,
       ),
 
       UnivEqGen.Options(

@@ -13,6 +13,7 @@ object CirceTest extends TestSuite {
     singlesAsObjects = true,
     monadicObjects = false,
     keyConstants = false,
+    sumTypes = Circe.Options.SumTypeFormat.TypeToValue,
   )
 
   private val globalOptions = GlobalOptions(
