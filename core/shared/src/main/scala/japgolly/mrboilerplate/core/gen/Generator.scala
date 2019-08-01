@@ -93,5 +93,6 @@ object Generator {
       header + seperator + body
   }
 
-  private val seperator = "\n\n// " + ("="*97) + "\n\n"
+  private val seperator = "\n\n"
+//  private val seperator = "\n\n// " + ("="*97) + "\n\n"
 }

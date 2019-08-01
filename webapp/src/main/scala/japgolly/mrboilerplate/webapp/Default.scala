@@ -36,8 +36,8 @@ object Default {
     ))
 
   def globalOptions = GlobalOptions(
-    shortInstanceNames = true,
-    generateCompanions = true,
+    shortInstanceNames = false,
+    generateCompanions = false,
   )
 
 }
