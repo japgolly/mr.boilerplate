@@ -1,8 +1,11 @@
 package japgolly.mrboilerplate.core.gen
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.mrboilerplate.core.data._
 import japgolly.mrboilerplate.core.StringUtils._
+import japgolly.mrboilerplate.core.gen.Circe.Options.SumTypeFormat
 import monocle.macros.Lenses
+import japgolly.univeq._
 
 object Circe extends Generator {
 
@@ -12,7 +15,18 @@ object Circe extends Generator {
   final case class Options(singlesAsObjects: Boolean,
                            monadicObjects: Boolean,
                            keyConstants: Boolean,
+                           sumTypes: Options.SumTypeFormat,
                           )
+
+  object Options {
+    sealed trait SumTypeFormat
+    object SumTypeFormat {
+      case object TypeToValue extends SumTypeFormat
+      case object UntaggedUnion extends SumTypeFormat
+      implicit def univEq: UnivEq[SumTypeFormat] = UnivEq.derive
+      val values = AdtMacros.adtValues[SumTypeFormat]
+    }
+  }
 
   override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = {
     case c: Cls        => genCls(c, opt, glopt)
@@ -26,7 +40,7 @@ object Circe extends Generator {
 
     val suffix = termSuffix(glopt)
 
-    def apply = name + ".apply"
+    def apply = s"$name.apply$typeParamAp"
 
     def unapply =
       fields match {
@@ -102,32 +116,44 @@ object Circe extends Generator {
   private def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
     import sb.{nonAbstractTransitiveChildrenMaxLen => clsMaxLen, _}
 
+    if (nonAbstractTransitiveChildren.isEmpty)
+      return Nil
+
     val suffix = termSuffix(glopt)
 
     def keyFor(c: Cls) = clsMaxLen.pad2("\"" + c.name.withHeadLower + "\"")
 
-    val decoderBody = {
-      def mkCase(c: Cls) = s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
-      s"""
-        |decodeSumBySoleKey {
-        |${nonAbstractTransitiveChildren.map(mkCase).mkString("\n")}
-        |}
-      """.stripMargin.trim
-    }
+    val (decoderBody, encoderBody) =
+      opt.sumTypes match {
 
-    val encoderBody = {
-      def mkCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
-      s"""
-         |Encoder.instance {
-         |${nonAbstractTransitiveChildren.map(mkCase).mkString("\n")}
-         |}
-      """.stripMargin.trim
-    }
+        case SumTypeFormat.TypeToValue =>
+          def decCase(c: Cls) = s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
+          val d =
+            s"""| decodeSumBySoleKey {
+                |${nonAbstractTransitiveChildren.map(decCase).mkString("\n")}
+                |}""".stripMargin
+          def encCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
+          val e =
+            s"""| Encoder.instance {
+                |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
+                |}""".stripMargin
+          (d, e)
+
+        case SumTypeFormat.UntaggedUnion =>
+          def decCase(c: Cls) = s"\n  Decoder[${clsMaxLen.pad(c.name)}].widen[$name]"
+          val d = nonAbstractTransitiveChildren.map(decCase).mkString(" or")
+          def encCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => a.asJson"
+          val e =
+            s"""| Encoder.instance {
+                |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
+                |}""".stripMargin
+          (d, e)
+      }
 
     val (decoderDecl, encoderDecl) = mkDecls(sb, suffix, decoderBody, encoderBody)
 
-    val decoder = s"$decoderDecl = $decoderBody"
-    val encoder = s"$encoderDecl = $encoderBody"
+    val decoder = s"$decoderDecl =$decoderBody"
+    val encoder = s"$encoderDecl =$encoderBody"
 
     decoder :: encoder :: Nil
   }
@@ -141,11 +167,29 @@ object Circe extends Generator {
     (d, e)
   }
 
-  override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) =
-    if (data.exists(_.isInstanceOf[SealedBase]))
-      decodeSumBySoleKey :: Nil
-    else
-      Nil
+  override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) = {
+    val sumTypeExists = data.exists {
+      case s: SealedBase => s.nonAbstractTransitiveChildren.nonEmpty
+      case _: Cls => false
+    }
+
+    val imports = collection.mutable.ArrayBuffer.empty[String]
+    imports += "import io.circe._"
+    imports += "import io.circe.syntax._"
+
+    var results = List.empty[String]
+
+    if (sumTypeExists)
+      opt.sumTypes match {
+        case SumTypeFormat.TypeToValue   => results ::= decodeSumBySoleKey
+        case SumTypeFormat.UntaggedUnion => imports += importCatsFunctor
+      }
+
+    imports.sorted.mkString("\n") :: results
+  }
+
+  private val importCatsFunctor =
+    "import cats.syntax.functor._"
 
   private val decodeSumBySoleKey =
     """

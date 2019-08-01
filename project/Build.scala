@@ -81,6 +81,7 @@ object Build {
       libraryDependencies ++= Seq(
         "com.lihaoyi"                   %%% "fastparse"     % Ver.FastParse,
         "com.lihaoyi"                   %%% "scalaparse"    % Ver.FastParse,
+        "com.github.japgolly.microlibs" %%% "adt-macros"    % Ver.Microlibs,
         "com.github.japgolly.microlibs" %%% "nonempty"      % Ver.Microlibs,
         "com.github.japgolly.microlibs" %%% "stdlib-ext"    % Ver.Microlibs,
         "com.github.japgolly.microlibs" %%% "utils"         % Ver.Microlibs,
@@ -96,7 +97,6 @@ object Build {
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
-        "com.github.japgolly.microlibs"     %%% "adt-macros"  % Ver.Microlibs,
         "com.github.japgolly.scalajs-react" %%% "extra"       % Ver.SJSReact,
         "com.github.japgolly.scalajs-react" %%% "ext-monocle" % Ver.SJSReact),
       emitSourceMaps := true,
