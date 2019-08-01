@@ -38,6 +38,7 @@ object Default {
   def globalOptions = GlobalOptions(
     shortInstanceNames = false,
     generateCompanions = false,
+    makeValsLazy = true,
   )
 
 }

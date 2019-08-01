@@ -10,10 +10,8 @@ object UnivEqGen extends Generator {
   @Lenses
   final case class Options(oneLine: Boolean)
 
-  override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = td => {
+  override def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String] = td => {
     import td._
-
-    val suffix = termSuffix(glopt)
 
     val defn = s"implicit def univEq$suffix${typeParamDefsAndEvTC("UnivEq")}: UnivEq[$nameWithTypesApplied]"
 
@@ -24,6 +22,6 @@ object UnivEqGen extends Generator {
     decl :: Nil
   }
 
-  override def initStatements(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions): List[String] =
+  override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] =
     "import japgolly.univeq.UnivEq" :: Nil
 }

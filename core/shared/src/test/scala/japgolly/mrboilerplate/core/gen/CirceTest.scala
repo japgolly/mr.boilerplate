@@ -19,6 +19,7 @@ object CirceTest extends TestSuite {
   private val globalOptions = GlobalOptions(
     shortInstanceNames = false,
     generateCompanions = false,
+    makeValsLazy = false,
   )
 
   private def assertGen(td: TypeDef,
@@ -26,7 +27,7 @@ object CirceTest extends TestSuite {
                         glopt: GlobalOptions = globalOptions,
                        )(expect: String*)
                        (implicit l: Line): Unit = {
-    val actual = Circe.gen(opt, glopt)(td)
+    val actual = Circe.gen(opt)(glopt)(td)
     assertSeq(actual, expect.map(_.trim))
   }
 

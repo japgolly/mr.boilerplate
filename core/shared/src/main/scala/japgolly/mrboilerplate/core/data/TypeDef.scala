@@ -12,17 +12,19 @@ sealed trait TypeDef {
   val typeParams: List[Type]
   val superTypes: List[Type]
 
-  def termSuffix(g: GlobalOptions): String =
+  def suffix(implicit g: GlobalOptions): String =
     if (g.shortInstanceNames)
       ""
     else
       name.withHeadUpper
 
-  final def valDef: String =
-    if (typeParams.isEmpty)
-      "val"
-    else
+  final def valDef(implicit g: GlobalOptions): String =
+    if (typeParams.nonEmpty)
       "def"
+    else if (g.makeValsLazy)
+      "lazy val"
+    else
+      "val"
 
   final lazy val typeParamDefs: String =
     if (typeParams.isEmpty)

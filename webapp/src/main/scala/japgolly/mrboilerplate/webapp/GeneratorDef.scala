@@ -37,9 +37,9 @@ object GeneratorDef {
 
     override def renderOptions(s: StateSnapshot[Circe.Options]) =
       <.div(
+        checkbox(s)(Circe.Options.keyConstants    , "Constants for object keys"),
         checkbox(s)(Circe.Options.singlesAsObjects, "Encode single-field as single-key objects"),
         checkbox(s)(Circe.Options.monadicObjects  , "Monadic object codecs"),
-        checkbox(s)(Circe.Options.keyConstants    , "Constants for object keys"),
         select(s)(Circe.Options.sumTypes          , "Sum-type format", Circe.Options.SumTypeFormat.values) {
           case Circe.Options.SumTypeFormat.TypeToValue   => """{"<type>":"<value>"}"""
           case Circe.Options.SumTypeFormat.UntaggedUnion => """<value₁> | <value₂> | …"""
@@ -64,8 +64,9 @@ object GeneratorDef {
 
   def renderGlobalOptions(s: StateSnapshot[GlobalOptions]) =
     <.div(
-      checkbox(s)(GlobalOptions.shortInstanceNames, "Use short instance names"),
       checkbox(s)(GlobalOptions.generateCompanions, "Generate companion objects"),
+      checkbox(s)(GlobalOptions.makeValsLazy      , "Lazy vals"),
+      checkbox(s)(GlobalOptions.shortInstanceNames, "Use short instance names"),
     )
 
   // ===================================================================================================================

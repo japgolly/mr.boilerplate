@@ -9,10 +9,10 @@ trait Generator { self =>
 
   val title: String
 
-  def initStatements(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions): List[String] =
+  def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] =
     Nil
 
-  def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String]
+  def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String]
 
   final type AndOptions = Generator.AndOptions { val gen: self.type }
 
@@ -34,10 +34,10 @@ object Generator {
       Option.when(g eq gen)(this.asInstanceOf[g.AndOptions])
   }
 
-  final def apply(gens: Traversable[AndOptions], data: Traversable[TypeDef], go: GlobalOptions): String = {
+  final def apply(gens: Traversable[AndOptions], data: Traversable[TypeDef])(implicit go: GlobalOptions): String = {
 
     val preparedGens: List[TypeDef => List[String]] =
-      gens.toIterator.map(g => g.gen.gen(g.options, go)).toList
+      gens.toIterator.map(g => g.gen.gen(g.options)).toList
 
     def gen(td: TypeDef): Iterator[String] =
       preparedGens.toIterator.flatMap(_(td))
@@ -45,7 +45,7 @@ object Generator {
     val header: String = {
       val (imports, other) =
         gens.toIterator
-          .flatMap(g => g.gen.initStatements(data, g.options, go))
+          .flatMap(g => g.gen.initStatements(data, g.options))
           .partition(_.startsWith("import "))
 
       val sortedImports =
@@ -72,6 +72,10 @@ object Generator {
             Nil
         }.mkString("\n\n")
 
+
+      } else if (go.makeValsLazy) {
+        // Order doesn't matter
+        data.toIterator.flatMap(gen).mkString("\n\n")
 
       } else {
         // Order matters; generate dependants first

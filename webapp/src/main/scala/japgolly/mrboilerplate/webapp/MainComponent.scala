@@ -44,7 +44,7 @@ object MainComponent {
       for {
         gen  <- pxGen
         data <- pxParsedOK
-      } yield Generator(gen.enabledWithOptions, data, gen.glopt)
+      } yield Generator(gen.enabledWithOptions, data)(gen.glopt)
 
     def render(p: Props, s: State): VdomElement = {
       <.div(

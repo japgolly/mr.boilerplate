@@ -28,17 +28,15 @@ object Circe extends Generator {
     }
   }
 
-  override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = {
-    case c: Cls        => genCls(c, opt, glopt)
-    case s: SealedBase => genSB(s, opt, glopt)
+  override def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String] = {
+    case c: Cls        => genCls(c, opt)
+    case s: SealedBase => genSB(s, opt)
   }
 
   // ===================================================================================================================
 
-  private def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
+  private def genCls(cls: Cls, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
     import cls._
-
-    val suffix = termSuffix(glopt)
 
     def apply = s"$name.apply$typeParamAp"
 
@@ -99,7 +97,7 @@ object Circe extends Generator {
           (d, e)
       }
 
-    val (decoderDecl, encoderDecl) = mkDecls(cls, suffix, decoderBody, encoderBody)
+    val (decoderDecl, encoderDecl) = mkDecls(cls, decoderBody, encoderBody)
 
     val decoder = s"$decoderDecl =\n  $decoderBody"
     val encoder = s"$encoderDecl =\n  $encoderBody"
@@ -113,13 +111,11 @@ object Circe extends Generator {
 
   // ===================================================================================================================
 
-  private def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
+  private def genSB(sb: SealedBase, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
     import sb.{nonAbstractTransitiveChildrenMaxLen => clsMaxLen, _}
 
     if (nonAbstractTransitiveChildren.isEmpty)
       return Nil
-
-    val suffix = termSuffix(glopt)
 
     def keyFor(c: Cls) = clsMaxLen.pad2("\"" + c.name.withHeadLower + "\"")
 
@@ -150,7 +146,7 @@ object Circe extends Generator {
           (d, e)
       }
 
-    val (decoderDecl, encoderDecl) = mkDecls(sb, suffix, decoderBody, encoderBody)
+    val (decoderDecl, encoderDecl) = mkDecls(sb, decoderBody, encoderBody)
 
     val decoder = s"$decoderDecl =$decoderBody"
     val encoder = s"$encoderDecl =$encoderBody"
@@ -160,14 +156,15 @@ object Circe extends Generator {
 
   // ===================================================================================================================
 
-  private def mkDecls(td: TypeDef, suffix: String, decoderBody: String, encoderBody: String): (String, String) = {
+  private def mkDecls(td: TypeDef, decoderBody: String, encoderBody: String)
+                     (implicit g: GlobalOptions): (String, String) = {
     import td._
     val d = s"implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$nameWithTypesApplied]"
     val e = s"implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$nameWithTypesApplied]"
     (d, e)
   }
 
-  override def initStatements(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) = {
+  override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions) = {
     val sumTypeExists = data.exists {
       case s: SealedBase => s.nonAbstractTransitiveChildren.nonEmpty
       case _: Cls => false
