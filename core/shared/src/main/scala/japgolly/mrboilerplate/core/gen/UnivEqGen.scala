@@ -23,4 +23,7 @@ object UnivEqGen extends Generator {
 
     decl :: Nil
   }
+
+  override def initStatements(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions): List[String] =
+    "import japgolly.univeq.UnivEq" :: Nil
 }

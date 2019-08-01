@@ -167,7 +167,7 @@ object Circe extends Generator {
     (d, e)
   }
 
-  override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) = {
+  override def initStatements(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) = {
     val sumTypeExists = data.exists {
       case s: SealedBase => s.nonAbstractTransitiveChildren.nonEmpty
       case _: Cls => false

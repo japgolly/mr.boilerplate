@@ -1,5 +1,6 @@
 package japgolly.mrboilerplate.core.gen
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.mrboilerplate.core.data._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 
@@ -8,7 +9,7 @@ trait Generator { self =>
 
   val title: String
 
-  def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions): List[String] =
+  def initStatements(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions): List[String] =
     Nil
 
   def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String]
@@ -41,6 +42,21 @@ object Generator {
     def gen(td: TypeDef): Iterator[String] =
       preparedGens.toIterator.flatMap(_(td))
 
+    val header: String = {
+      val (imports, other) =
+        gens.toIterator
+          .flatMap(g => g.gen.initStatements(data, g.options, go))
+          .partition(_.startsWith("import "))
+
+      val sortedImports =
+        MutableArray(imports.flatMap(_.split("\n")).map(_.trim).filter(_.nonEmpty))
+          .sort
+          .iterator
+          .mkString("\n")
+
+      (Iterator.single(sortedImports) ++ other).mkString("\n\n")
+    }
+
     val body: String =
       if (go.generateCompanions) {
         // Order doesn't matter
@@ -70,8 +86,6 @@ object Generator {
         r1 ++= r2.result()
         r1.result().mkString("\n\n")
       }
-
-    val header = gens.toIterator.flatMap(g => g.gen.helperFns(data, g.options, go)).mkString("\n\n")
 
     if (header.isEmpty)
       body
