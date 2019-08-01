@@ -22,6 +22,7 @@ object Circe extends Generator {
     sealed trait SumTypeFormat
     object SumTypeFormat {
       case object TypeToValue extends SumTypeFormat
+      case object UntaggedUnion extends SumTypeFormat
       implicit def univEq: UnivEq[SumTypeFormat] = UnivEq.derive
       val values = AdtMacros.adtValues[SumTypeFormat]
     }
@@ -115,32 +116,44 @@ object Circe extends Generator {
   private def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
     import sb.{nonAbstractTransitiveChildrenMaxLen => clsMaxLen, _}
 
+    if (nonAbstractTransitiveChildren.isEmpty)
+      return Nil
+
     val suffix = termSuffix(glopt)
 
     def keyFor(c: Cls) = clsMaxLen.pad2("\"" + c.name.withHeadLower + "\"")
 
     val (decoderBody, encoderBody) =
       opt.sumTypes match {
+
         case SumTypeFormat.TypeToValue =>
           def decCase(c: Cls) = s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
           val d =
-            s"""
-               |decodeSumBySoleKey {
-               |${nonAbstractTransitiveChildren.map(decCase).mkString("\n")}
-               |}""".stripMargin.trim
+            s"""| decodeSumBySoleKey {
+                |${nonAbstractTransitiveChildren.map(decCase).mkString("\n")}
+                |}""".stripMargin
           def encCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
           val e =
-            s"""
-               |Encoder.instance {
-               |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
-               |}""".stripMargin.trim
+            s"""| Encoder.instance {
+                |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
+                |}""".stripMargin
+          (d, e)
+
+        case SumTypeFormat.UntaggedUnion =>
+          def decCase(c: Cls) = s"\n  Decoder[${clsMaxLen.pad(c.name)}].widen[$name]"
+          val d = nonAbstractTransitiveChildren.map(decCase).mkString(" or")
+          def encCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => a.asJson"
+          val e =
+            s"""| Encoder.instance {
+                |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
+                |}""".stripMargin
           (d, e)
       }
 
     val (decoderDecl, encoderDecl) = mkDecls(sb, suffix, decoderBody, encoderBody)
 
-    val decoder = s"$decoderDecl = $decoderBody"
-    val encoder = s"$encoderDecl = $encoderBody"
+    val decoder = s"$decoderDecl =$decoderBody"
+    val encoder = s"$encoderDecl =$encoderBody"
 
     decoder :: encoder :: Nil
   }
@@ -154,11 +167,29 @@ object Circe extends Generator {
     (d, e)
   }
 
-  override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) =
-    if (data.exists(_.isInstanceOf[SealedBase]) && opt.sumTypes ==* Options.SumTypeFormat.TypeToValue)
-      decodeSumBySoleKey :: Nil
-    else
-      Nil
+  override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) = {
+    val sumTypeExists = data.exists {
+      case s: SealedBase => s.nonAbstractTransitiveChildren.nonEmpty
+      case _: Cls => false
+    }
+
+    val imports = collection.mutable.ArrayBuffer.empty[String]
+    imports += "import io.circe._"
+    imports += "import io.circe.syntax._"
+
+    var results = List.empty[String]
+
+    if (sumTypeExists)
+      opt.sumTypes match {
+        case SumTypeFormat.TypeToValue   => results ::= decodeSumBySoleKey
+        case SumTypeFormat.UntaggedUnion => imports += importCatsFunctor
+      }
+
+    imports.sorted.mkString("\n") :: results
+  }
+
+  private val importCatsFunctor =
+    "import cats.syntax.functor._"
 
   private val decodeSumBySoleKey =
     """

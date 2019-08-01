@@ -41,7 +41,8 @@ object GeneratorDef {
         checkbox(s)(Circe.Options.monadicObjects  , "Monadic object codecs"),
         checkbox(s)(Circe.Options.keyConstants    , "Constants for object keys"),
         select(s)(Circe.Options.sumTypes          , "Sum-type format", Circe.Options.SumTypeFormat.values) {
-          case Circe.Options.SumTypeFormat.TypeToValue => """{"<type>":"<value>"}"""
+          case Circe.Options.SumTypeFormat.TypeToValue   => """{"<type>":"<value>"}"""
+          case Circe.Options.SumTypeFormat.UntaggedUnion => """<value₁> | <value₂> | …"""
         },
       )
   }

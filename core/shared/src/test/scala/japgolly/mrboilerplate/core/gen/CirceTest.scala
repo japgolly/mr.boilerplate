@@ -217,5 +217,32 @@ object CirceTest extends TestSuite {
         |}
       """.stripMargin.trim,
     )
+
+    'adtUntaggedUnion - assertGen(
+      SealedBase("Base", Nil, Nil, List(
+        Cls("A", Nil, List("a" -> "Int"), List("Base")),
+        Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
+      )),
+        circeOptions.copy(sumTypes = Circe.Options.SumTypeFormat.UntaggedUnion),
+        globalOptions.copy(shortInstanceNames = true)
+      )(
+      """
+        |implicit val decoder: Decoder[Base] =
+        |  Decoder[A  ].widen[Base] or
+        |  Decoder[Bee].widen[Base]
+      """.stripMargin.trim,
+      """
+        |implicit val encoder: Encoder[Base] = Encoder.instance {
+        |  case a: A   => a.asJson
+        |  case a: Bee => a.asJson
+        |}
+      """.stripMargin.trim,
+    )
+
+    'adtNoInstances - assertGen(
+      SealedBase("Base", Nil, Nil, List(
+      SealedBase("A", Nil, List("Base"), Nil),
+    )))()
+
   }
 }
