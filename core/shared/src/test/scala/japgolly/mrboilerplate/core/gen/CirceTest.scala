@@ -74,7 +74,7 @@ object CirceTest extends TestSuite {
     )(
       """
         |implicit def decoder[A: Decoder]: Decoder[NonEmptyList[A]] =
-        |  Decoder.forProduct2("head", "tail")(NonEmptyList.apply)
+        |  Decoder.forProduct2("head", "tail")(NonEmptyList.apply[A])
         |""".stripMargin,
       """
         |implicit def encoder[A: Encoder]: Encoder[NonEmptyList[A]] =
@@ -86,7 +86,7 @@ object CirceTest extends TestSuite {
     )(
       """
         |implicit def decoderPoly[F[_, _[_]], A](implicit ev1: Decoder[F[A]]): Decoder[Poly[F, A]] =
-        |  Decoder.forProduct1("fa")(Poly.apply)
+        |  Decoder.forProduct1("fa")(Poly.apply[F, A])
         |""".stripMargin,
       """
         |implicit def encoderPoly[F[_, _[_]], A](implicit ev1: Encoder[F[A]]): Encoder[Poly[F, A]] =
@@ -99,7 +99,7 @@ object CirceTest extends TestSuite {
     )(
       """
         |implicit def decoder[F[_], A: Decoder, B: Decoder](implicit ev1: Decoder[F[A]]): Decoder[PolyK2[F, A, B]] =
-        |  Decoder.forProduct3("fa", "a", "b")(PolyK2.apply)
+        |  Decoder.forProduct3("fa", "a", "b")(PolyK2.apply[F, A, B])
         |""".stripMargin,
       """
         |implicit def encoder[F[_], A: Encoder, B: Encoder](implicit ev1: Encoder[F[A]]): Encoder[PolyK2[F, A, B]] =

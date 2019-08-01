@@ -40,7 +40,7 @@ object Circe extends Generator {
 
     val suffix = termSuffix(glopt)
 
-    def apply = name + ".apply"
+    def apply = s"$name.apply$typeParamAp"
 
     def unapply =
       fields match {
