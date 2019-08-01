@@ -12,7 +12,7 @@ for f in ${files[@]}; do
   rm -f $(basename $f)
 done
 
-sbt webapp/fullOptJS
+sbt clean webapp/fullOptJS
 
 for f in ${files[@]}; do
   cp $f .
@@ -23,6 +23,8 @@ sed -i '/!-- REACT.DEV/,/!-- REACT.PROD/d; /REACT.END --/d' index.html
 for f in ${files[@]}; do
   git add $(basename $f)
 done
+
+ls -la "${files[@]}"
 
 git status
 
