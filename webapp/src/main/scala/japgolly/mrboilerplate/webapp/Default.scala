@@ -6,13 +6,17 @@ object Default {
 
   def input =
     s"""
-       |case class Person(name   : PersonName,
-       |                  address: Address,
-       |                  phone  : Option[PhoneNumber])
+       |sealed trait Sum
        |
-       |final case class NonEmptyList[A](head: A, tail: List[A])
+       |case class Empty() extends Sum
        |
-       |final case class Roles[F[_], +A <: AnyRef](roles: F[A])
+       |case class Person(name   : String,
+       |                  address: String,
+       |                  phone  : Option[String]) extends Sum
+       |
+       |final case class NonEmptyList[+A](head: A, tail: List[A])
+       |
+       |final case class Roles[F[_], A](roles: F[A])
      """.stripMargin.trim + "\n"
 
   def options(g: GeneratorDef): g.gen.Options =
@@ -22,7 +26,7 @@ object Default {
         singlesAsObjects = true,
         monadicObjects = false,
         keyConstants = false,
-        sumTypes = Circe.Options.SumTypeFormat.TypeToValue,
+        sumTypes = Circe.Options.SumTypeFormat.UntaggedUnion,
       ),
 
       UnivEqGen.Options(
