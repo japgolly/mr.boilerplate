@@ -33,6 +33,18 @@ object CirceTest extends TestSuite {
 
   override def tests = Tests {
 
+    'obj - assertGen(
+      Obj("Obj", Nil)
+    )(
+      """
+        |implicit val decoderObj: Decoder[Obj.type] =
+        |  Decoder.const(Obj)
+        |""".stripMargin,
+      """
+        |implicit val encoderObj: Encoder[Obj.type] =
+        |  Encoder.encodeUnit.contramap(_ => ())
+        |""".stripMargin)
+
     'mono0 - assertGen(
       Cls("Mono", Nil, Nil, Nil)
     )(
@@ -202,6 +214,7 @@ object CirceTest extends TestSuite {
       SealedBase("Base", Nil, Nil, List(
         Cls("A", Nil, List("a" -> "Int"), List("Base")),
         Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
+        Obj("O", Nil),
       )),
         glopt = globalOptions.copy(shortInstanceNames = true)
       )(
@@ -209,12 +222,14 @@ object CirceTest extends TestSuite {
         |implicit val decoder: Decoder[Base] = decodeSumBySoleKey {
         |  case ("a"  , c) => c.as[A]
         |  case ("bee", c) => c.as[Bee]
+        |  case ("o"  , _) => Right(O)
         |}
       """.stripMargin.trim,
       """
         |implicit val encoder: Encoder[Base] = Encoder.instance {
         |  case a: A   => Json.obj("a"   -> a.asJson)
         |  case a: Bee => Json.obj("bee" -> a.asJson)
+        |  case a@ O   => Json.obj("o"   -> a.asJson)
         |}
       """.stripMargin.trim,
     )
@@ -223,19 +238,22 @@ object CirceTest extends TestSuite {
       SealedBase("Base", Nil, Nil, List(
         Cls("A", Nil, List("a" -> "Int"), List("Base")),
         Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
+        Obj("O", Nil),
       )),
         circeOptions.copy(sumTypes = Circe.Options.SumTypeFormat.UntaggedUnion),
         globalOptions.copy(shortInstanceNames = true)
       )(
       """
         |implicit val decoder: Decoder[Base] =
-        |  Decoder[A  ].widen[Base] or
-        |  Decoder[Bee].widen[Base]
+        |  Decoder[A     ].widen[Base] or
+        |  Decoder[Bee   ].widen[Base] or
+        |  Decoder[O.type].widen[Base]
       """.stripMargin.trim,
       """
         |implicit val encoder: Encoder[Base] = Encoder.instance {
         |  case a: A   => a.asJson
         |  case a: Bee => a.asJson
+        |  case a@ O   => a.asJson
         |}
       """.stripMargin.trim,
     )

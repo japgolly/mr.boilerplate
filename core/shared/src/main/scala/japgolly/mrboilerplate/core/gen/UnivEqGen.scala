@@ -13,7 +13,7 @@ object UnivEqGen extends Generator {
   override def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String] = td => {
     import td._
 
-    val defn = s"implicit def univEq$suffix${typeParamDefsAndEvTC("UnivEq")}: UnivEq[$nameWithTypesApplied]"
+    val defn = s"implicit def univEq$suffix${typeParamDefsAndEvTC("UnivEq")}: UnivEq[$typeNamePoly]"
 
     val sep = if (opt.oneLine) " " else "\n  "
 

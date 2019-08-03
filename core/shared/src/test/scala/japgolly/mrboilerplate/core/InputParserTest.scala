@@ -196,5 +196,46 @@ object InputParserTest extends TestSuite {
         Cls("C", Nil, Nil, Nil))
     }
 
+    'obj - {
+      val input =
+        """
+          |sealed trait X
+          |object Y extends X
+          |case object Z extends X
+          |
+          |object O
+          |case object C
+        """.stripMargin
+      val y = Obj("Y", List("X"))
+      val z = Obj("Z", List("X"))
+      assertParse(input)(
+        SealedBase("X", Nil, Nil, List(y, z)),
+        y,
+        z,
+        Unrecognised("object O"),
+        Obj("C",  Nil))
+    }
+
+    'objBody - {
+      val body = "{ def x = 1 \n val y = 2 }"
+      val input =
+        s"""
+          |sealed trait X $body
+          |object Y extends X $body
+          |case object Z extends X $body
+          |
+          |object O {
+          |  case object C $body
+          |}
+        """.stripMargin
+      val y = Obj("Y", List("X"))
+      val z = Obj("Z", List("X"))
+      assertParse(input)(
+        SealedBase("X", Nil, Nil, List(y, z)),
+        y,
+        z,
+        Unrecognised("object O {"),
+        Obj("C", Nil))
+    }
   }
 }

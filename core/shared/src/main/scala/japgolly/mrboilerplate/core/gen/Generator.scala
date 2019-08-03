@@ -84,6 +84,7 @@ object Generator {
 
         data.foreach  {
           case c: Cls        => r1 ++= gen(c)
+          case o: Obj        => r1 ++= gen(o)
           case s: SealedBase => r2 ++= gen(s) // needs to be last
         }
 

@@ -59,7 +59,7 @@ object InputParser {
       def ClsArg = P( Annot.rep ~ ClsArgMod.? ~ Id.! ~ `:` ~ Type.! ~ (`=` ~ ExprCtx.Expr).? )
       def ClsArgs = P( OneNLMax ~ "(" ~/ `implicit`.? ~ ClsArg.repTC() ~ ")" )
 
-      P( `case`.? ~ `class` ~/ Id.! ~ TypeArgList2.? ~~ Prelude.? ~~ ClsArgs.repX ~ DefTmpl.?.map(_.getOrElse(Seq.empty)) )
+      P( `case`.? ~ `class` ~/ Id.! ~ TypeArgList2.? ~~ Prelude.? ~~ ClsArgs.repX ~ DefTmpl_? )
     }
 
     def Constrs[_: P]: P[Seq[data.Type]] =
@@ -74,15 +74,19 @@ object InputParser {
     def DefTmpl[_: P]: P[Seq[data.Type]] =
       P( (`extends` | `<:`) ~ AnonTmpl2 | TmplBody.map(_ => Seq.empty) )
 
+    def DefTmpl_?[_: P]: P[Seq[data.Type]] =
+      P(DefTmpl.?.map(_.getOrElse(Seq.empty)))
+
     def AnonTmpl2[_: P]: P[Seq[data.Type]] =
       P( EarlyDefTmpl | NamedTmpl | TmplBody.map(_ => Seq.empty) )
 
     override def AnonTmpl[_: P] = AnonTmpl2.map(_ => ())
 
     def TraitDef[_: P]: P[(String, Option[Seq[Type]], Seq[Type])] =
-      P( `trait` ~/ Id.! ~ TypeArgList2.? ~ DefTmpl.?.map(_.getOrElse(Seq.empty)) )
+      P( `trait` ~/ Id.! ~ TypeArgList2.? ~ DefTmpl_? )
 
     def ObjDef[_: P]: P[Unit] = P( `case`.? ~ `object` ~/ Id ~ DefTmpl.? )
+    def ObjDef2[_: P] = P( `case`.!.? ~ `object` ~/ Id.! ~ DefTmpl_? )
 
     def Constr[_: P] = P( AnnotType2 ~~ (NotNewline ~ ParenArgList ).repX )
     def AnnotType2[_: P] = P(SimpleType.!.map(s => data.Type(s.trim)) ~~ NLAnnot.repX )
@@ -144,11 +148,22 @@ object InputParser {
         ))
     }
 
+  private def obj[_: P]: P[Element] =
+    P(Scala.Mod.rep ~ Scala.ObjDef2)
+      .filter(x => x._1.isDefined || x._3.nonEmpty)
+      .map {
+        case (_, name, sup) =>
+          Element.Success(Obj(
+            name       = name,
+            superTypes = sup.toList,
+          ))
+      }
+
   private def ignore[_: P]: P[Unit] =
     P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment | Scala.Annot | (Scala.Mod.rep ~ Scala.Dcl))
 
   private def recognised[_: P]: P[Element] =
-    P(cls | sealedTrait | ignore.rep(1).map(_ => Element.Empty))
+    P(obj | cls | sealedTrait | ignore.rep(1).map(_ => Element.Empty))
 
   private def unrecognised[_: P]: P[Element] =
     P((!recognised ~~ (CharPred(_.isWhitespace) | CharsWhile(!_.isWhitespace))).rep.!.map(Element.Unrecognised(_)))
