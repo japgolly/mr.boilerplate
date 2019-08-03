@@ -1,5 +1,6 @@
 package japgolly.mrboilerplate.core.gen
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.mrboilerplate.core.data._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 
@@ -8,10 +9,10 @@ trait Generator { self =>
 
   val title: String
 
-  def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions): List[String] =
+  def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] =
     Nil
 
-  def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String]
+  def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String]
 
   final type AndOptions = Generator.AndOptions { val gen: self.type }
 
@@ -33,13 +34,28 @@ object Generator {
       Option.when(g eq gen)(this.asInstanceOf[g.AndOptions])
   }
 
-  final def apply(gens: Traversable[AndOptions], data: Traversable[TypeDef], go: GlobalOptions): String = {
+  final def apply(gens: Traversable[AndOptions], data: Traversable[TypeDef])(implicit go: GlobalOptions): String = {
 
     val preparedGens: List[TypeDef => List[String]] =
-      gens.toIterator.map(g => g.gen.gen(g.options, go)).toList
+      gens.toIterator.map(g => g.gen.gen(g.options)).toList
 
     def gen(td: TypeDef): Iterator[String] =
       preparedGens.toIterator.flatMap(_(td))
+
+    val header: String = {
+      val (imports, other) =
+        gens.toIterator
+          .flatMap(g => g.gen.initStatements(data, g.options))
+          .partition(_.startsWith("import "))
+
+      val sortedImports =
+        MutableArray(imports.flatMap(_.split("\n")).map(_.trim).filter(_.nonEmpty))
+          .sort
+          .iterator
+          .mkString("\n")
+
+      (Iterator.single(sortedImports) ++ other).mkString("\n\n")
+    }
 
     val body: String =
       if (go.generateCompanions) {
@@ -57,6 +73,10 @@ object Generator {
         }.mkString("\n\n")
 
 
+      } else if (go.makeValsLazy) {
+        // Order doesn't matter
+        data.toIterator.flatMap(gen).mkString("\n\n")
+
       } else {
         // Order matters; generate dependants first
         val r1 = List.newBuilder[String]
@@ -64,6 +84,7 @@ object Generator {
 
         data.foreach  {
           case c: Cls        => r1 ++= gen(c)
+          case o: Obj        => r1 ++= gen(o)
           case s: SealedBase => r2 ++= gen(s) // needs to be last
         }
 
@@ -71,13 +92,12 @@ object Generator {
         r1.result().mkString("\n\n")
       }
 
-    val header = gens.toIterator.flatMap(g => g.gen.helperFns(data, g.options, go)).mkString("\n\n")
-
     if (header.isEmpty)
       body
     else
       header + seperator + body
   }
 
-  private val seperator = "\n\n// " + ("="*97) + "\n\n"
+  private val seperator = "\n\n"
+//  private val seperator = "\n\n// " + ("="*97) + "\n\n"
 }

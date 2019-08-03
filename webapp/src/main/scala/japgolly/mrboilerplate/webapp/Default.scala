@@ -8,6 +8,8 @@ object Default {
     s"""
        |sealed trait Sum
        |
+       |case object Singleton extends Sum
+       |
        |case class Empty() extends Sum
        |
        |case class Person(name   : String,
@@ -36,8 +38,9 @@ object Default {
     ))
 
   def globalOptions = GlobalOptions(
-    shortInstanceNames = true,
-    generateCompanions = true,
+    shortInstanceNames = false,
+    generateCompanions = false,
+    makeValsLazy = true,
   )
 
 }

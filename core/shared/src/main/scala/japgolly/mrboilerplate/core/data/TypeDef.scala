@@ -9,20 +9,23 @@ import japgolly.univeq.UnivEq
 
 sealed trait TypeDef {
   val name      : String
+  val typeName  : String
   val typeParams: List[Type]
   val superTypes: List[Type]
 
-  def termSuffix(g: GlobalOptions): String =
+  def suffix(implicit g: GlobalOptions): String =
     if (g.shortInstanceNames)
       ""
     else
       name.withHeadUpper
 
-  final def valDef: String =
-    if (typeParams.isEmpty)
-      "val"
-    else
+  final def valDef(implicit g: GlobalOptions): String =
+    if (typeParams.nonEmpty)
       "def"
+    else if (g.makeValsLazy)
+      "lazy val"
+    else
+      "val"
 
   final lazy val typeParamDefs: String =
     if (typeParams.isEmpty)
@@ -41,12 +44,14 @@ sealed trait TypeDef {
 
   def typeParamDefsAndEvTC(tc: String): String
 
-  final def nameWithTypesApplied: String =
-    name + typeParamAp
+  final def typeNamePoly: String =
+    typeName + typeParamAp
 }
 
 object TypeDef {
   implicit def univEq: UnivEq[TypeDef] = UnivEq.derive
+
+  sealed trait Concrete extends TypeDef
 }
 
 // =====================================================================================================================
@@ -64,21 +69,28 @@ final case class SealedBase(name            : String,
     s"sealed $name$tp$ex$dc"
   }
 
+  override val typeName =
+    name
+
   override def typeParamDefsAndEvTC(tc: String) =
     typeParamDefs
 
-  lazy val nonAbstractTransitiveChildren: List[Cls] =
+  lazy val concreteTransitiveChildren: List[TypeDef.Concrete] =
     MutableArray(
     directChildren
       .toIterator
       .flatMap {
-        case s: SealedBase => s.nonAbstractTransitiveChildren
-        case c: Cls => c :: Nil
+        case s: SealedBase => s.concreteTransitiveChildren
+        case c: Cls        => c :: Nil
+        case o: Obj        => o :: Nil
       }
     ).sortBy(_.name).to[List]
 
-  lazy val nonAbstractTransitiveChildrenMaxLen: MaxLen =
-    MaxLen.derive(nonAbstractTransitiveChildren.map(_.name))
+  lazy val concreteTransitiveChildrenMaxNameLen: MaxLen =
+    MaxLen.derive(concreteTransitiveChildren.map(_.name))
+
+  lazy val concreteTransitiveChildrenMaxTypeNameLen: MaxLen =
+    MaxLen.derive(concreteTransitiveChildren.map(_.typeName))
 }
 
 object SealedBase {
@@ -90,7 +102,7 @@ object SealedBase {
 final case class Cls(name      : String,
                      typeParams: List[Type],
                      fields    : List[Field],
-                     superTypes: List[Type]) extends TypeDef {
+                     superTypes: List[Type]) extends TypeDef.Concrete {
 
   override def toString: String = {
     val tp = if (typeParams.isEmpty) "" else typeParams.mkString("[", ", ", "]")
@@ -98,6 +110,9 @@ final case class Cls(name      : String,
     val ex = if (superTypes.isEmpty) "" else superTypes.mkString(" extends ", " with ", "")
     s"class $name$tp$fs$ex"
   }
+
+  override val typeName =
+    name
 
   implicit lazy val maxFieldLen: MaxLen =
     MaxLen.derive(fields.iterator.map(_.name.value))
@@ -163,4 +178,28 @@ final case class Cls(name      : String,
 
 object Cls {
   implicit def univEq: UnivEq[Cls] = UnivEq.derive
+}
+
+// =====================================================================================================================
+
+final case class Obj(name      : String,
+                     superTypes: List[Type]) extends TypeDef.Concrete {
+
+  override val typeName = name + ".type"
+
+  override def toString: String = {
+    val tp = if (typeParams.isEmpty) "" else typeParams.mkString("[", ", ", "]")
+    val ex = if (superTypes.isEmpty) "" else superTypes.mkString(" extends ", " with ", "")
+    s"object $name$tp$ex"
+  }
+
+  override val typeParams =
+    Nil
+
+  override def typeParamDefsAndEvTC(tc: String) =
+    typeParamDefs
+}
+
+object Obj {
+  implicit def univEq: UnivEq[Obj] = UnivEq.derive
 }

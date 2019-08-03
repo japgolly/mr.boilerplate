@@ -28,17 +28,32 @@ object Circe extends Generator {
     }
   }
 
-  override def gen(opt: Options, glopt: GlobalOptions): TypeDef => List[String] = {
-    case c: Cls        => genCls(c, opt, glopt)
-    case s: SealedBase => genSB(s, opt, glopt)
+  override def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String] = {
+    case c: Cls        => genCls(c, opt)
+    case o: Obj        => genObj(o, opt)
+    case s: SealedBase => genSB(s, opt)
   }
 
   // ===================================================================================================================
 
-  private def genCls(cls: Cls, opt: Options, glopt: GlobalOptions): List[String] = {
-    import cls._
+  private def genObj(obj: Obj, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
+    import obj._
 
-    val suffix = termSuffix(glopt)
+    val decoderBody = s"Decoder.const($name)"
+    val encoderBody = "Encoder.encodeUnit.contramap(_ => ())"
+
+    val (decoderDecl, encoderDecl) = mkDecls(obj, decoderBody, encoderBody)
+
+    val decoder = s"$decoderDecl =\n  $decoderBody"
+    val encoder = s"$encoderDecl =\n  $encoderBody"
+
+    decoder :: encoder :: Nil
+  }
+
+  // ===================================================================================================================
+
+  private def genCls(cls: Cls, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
+    import cls._
 
     def apply = s"$name.apply$typeParamAp"
 
@@ -99,7 +114,7 @@ object Circe extends Generator {
           (d, e)
       }
 
-    val (decoderDecl, encoderDecl) = mkDecls(cls, suffix, decoderBody, encoderBody)
+    val (decoderDecl, encoderDecl) = mkDecls(cls, decoderBody, encoderBody)
 
     val decoder = s"$decoderDecl =\n  $decoderBody"
     val encoder = s"$encoderDecl =\n  $encoderBody"
@@ -113,44 +128,54 @@ object Circe extends Generator {
 
   // ===================================================================================================================
 
-  private def genSB(sb: SealedBase, opt: Options, glopt: GlobalOptions): List[String] = {
-    import sb.{nonAbstractTransitiveChildrenMaxLen => clsMaxLen, _}
+  private def genSB(sb: SealedBase, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
+    import sb.{
+      concreteTransitiveChildrenMaxNameLen     => maxNameLen,
+      concreteTransitiveChildrenMaxTypeNameLen => maxTypeNameLen,
+      _}
 
-    if (nonAbstractTransitiveChildren.isEmpty)
+    if (concreteTransitiveChildren.isEmpty)
       return Nil
 
-    val suffix = termSuffix(glopt)
-
-    def keyFor(c: Cls) = clsMaxLen.pad2("\"" + c.name.withHeadLower + "\"")
+    def keyFor(t: TypeDef.Concrete) = maxNameLen.pad2("\"" + t.name.withHeadLower + "\"")
 
     val (decoderBody, encoderBody) =
       opt.sumTypes match {
 
         case SumTypeFormat.TypeToValue =>
-          def decCase(c: Cls) = s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
+          def decCase(t: TypeDef.Concrete) = t match {
+            case c: Cls => s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
+            case o: Obj => s"  case (${keyFor(o)}, _) => Right(${o.name})"
+          }
           val d =
             s"""| decodeSumBySoleKey {
-                |${nonAbstractTransitiveChildren.map(decCase).mkString("\n")}
+                |${concreteTransitiveChildren.map(decCase).mkString("\n")}
                 |}""".stripMargin
-          def encCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
+          def encCase(t: TypeDef.Concrete) = t match {
+            case c: Cls => s"  case a: ${maxNameLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
+            case o: Obj => s"  case a@ ${maxNameLen.pad(o.name)} => Json.obj(${keyFor(o)} -> a.asJson)"
+          }
           val e =
             s"""| Encoder.instance {
-                |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
+                |${concreteTransitiveChildren.map(encCase).mkString("\n")}
                 |}""".stripMargin
           (d, e)
 
         case SumTypeFormat.UntaggedUnion =>
-          def decCase(c: Cls) = s"\n  Decoder[${clsMaxLen.pad(c.name)}].widen[$name]"
-          val d = nonAbstractTransitiveChildren.map(decCase).mkString(" or")
-          def encCase(c: Cls) = s"  case a: ${clsMaxLen.pad(c.name)} => a.asJson"
+          def decCase(t: TypeDef.Concrete) = s"\n  Decoder[${maxTypeNameLen.pad(t.typeName)}].widen[$name]"
+          val d = concreteTransitiveChildren.map(decCase).mkString(" or")
+          def encCase(t: TypeDef.Concrete) = t match {
+            case c: Cls => s"  case a: ${maxNameLen.pad(c.name)} => a.asJson"
+            case o: Obj => s"  case a@ ${maxNameLen.pad(o.name)} => a.asJson"
+          }
           val e =
             s"""| Encoder.instance {
-                |${nonAbstractTransitiveChildren.map(encCase).mkString("\n")}
+                |${concreteTransitiveChildren.map(encCase).mkString("\n")}
                 |}""".stripMargin
           (d, e)
       }
 
-    val (decoderDecl, encoderDecl) = mkDecls(sb, suffix, decoderBody, encoderBody)
+    val (decoderDecl, encoderDecl) = mkDecls(sb, decoderBody, encoderBody)
 
     val decoder = s"$decoderDecl =$decoderBody"
     val encoder = s"$encoderDecl =$encoderBody"
@@ -160,17 +185,18 @@ object Circe extends Generator {
 
   // ===================================================================================================================
 
-  private def mkDecls(td: TypeDef, suffix: String, decoderBody: String, encoderBody: String): (String, String) = {
+  private def mkDecls(td: TypeDef, decoderBody: String, encoderBody: String)
+                     (implicit g: GlobalOptions): (String, String) = {
     import td._
-    val d = s"implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$nameWithTypesApplied]"
-    val e = s"implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$nameWithTypesApplied]"
+    val d = s"implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$typeNamePoly]"
+    val e = s"implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$typeNamePoly]"
     (d, e)
   }
 
-  override def helperFns(data: Traversable[TypeDef], opt: Options, glopt: GlobalOptions) = {
+  override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions) = {
     val sumTypeExists = data.exists {
-      case s: SealedBase => s.nonAbstractTransitiveChildren.nonEmpty
-      case _: Cls => false
+      case s: SealedBase       => s.concreteTransitiveChildren.nonEmpty
+      case _: TypeDef.Concrete => false
     }
 
     val imports = collection.mutable.ArrayBuffer.empty[String]
