@@ -35,6 +35,11 @@ object Default {
         oneLine = false,
       ),
 
+      BooPickle.Options(
+        conciseSingleFields = true,
+        keyConstants = true,
+      ),
+
     ))
 
   def globalOptions = GlobalOptions(

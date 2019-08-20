@@ -42,7 +42,7 @@ object Circe extends Generator {
     val decoderBody = s"Decoder.const($name)"
     val encoderBody = "Encoder.encodeUnit.contramap(_ => ())"
 
-    val (decoderDecl, encoderDecl) = mkDecls(obj, decoderBody, encoderBody)
+    val (decoderDecl, encoderDecl) = mkDef(obj)
 
     val decoder = s"$decoderDecl =\n  $decoderBody"
     val encoder = s"$encoderDecl =\n  $encoderBody"
@@ -54,14 +54,6 @@ object Circe extends Generator {
 
   private def genCls(cls: Cls, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
     import cls._
-
-    def apply = s"$name.apply$typeParamAp"
-
-    def unapply =
-      fields match {
-        case f :: Nil => "_." + f.name
-        case fs       => fs.map("a." + _.name).mkString("a => (", ", ", ")")
-      }
 
     def mkKey(f: String) =
       "CirceKey" + suffix + f.withHeadUpper
@@ -114,7 +106,7 @@ object Circe extends Generator {
           (d, e)
       }
 
-    val (decoderDecl, encoderDecl) = mkDecls(cls, decoderBody, encoderBody)
+    val (decoderDecl, encoderDecl) = mkDef(cls)
 
     val decoder = s"$decoderDecl =\n  $decoderBody"
     val encoder = s"$encoderDecl =\n  $encoderBody"
@@ -175,7 +167,7 @@ object Circe extends Generator {
           (d, e)
       }
 
-    val (decoderDecl, encoderDecl) = mkDecls(sb, decoderBody, encoderBody)
+    val (decoderDecl, encoderDecl) = mkDef(sb)
 
     val decoder = s"$decoderDecl =$decoderBody"
     val encoder = s"$encoderDecl =$encoderBody"
@@ -185,8 +177,7 @@ object Circe extends Generator {
 
   // ===================================================================================================================
 
-  private def mkDecls(td: TypeDef, decoderBody: String, encoderBody: String)
-                     (implicit g: GlobalOptions): (String, String) = {
+  private def mkDef(td: TypeDef)(implicit g: GlobalOptions): (String, String) = {
     import td._
     val d = s"implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$typeNamePoly]"
     val e = s"implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$typeNamePoly]"

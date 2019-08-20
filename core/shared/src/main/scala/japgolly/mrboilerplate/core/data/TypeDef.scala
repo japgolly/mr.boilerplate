@@ -123,6 +123,15 @@ final case class Cls(name      : String,
   private val typeUsedInMonoField: Type => Boolean =
     Memo(t => fields.exists(f => !polyField(f) && f.typ.contains(t)))
 
+  lazy val apply =
+    s"$name.apply$typeParamAp"
+
+  lazy val unapply =
+    fields match {
+      case f :: Nil => "_." + f.name
+      case fs       => fs.map("a." + _.name).mkString("a => (", ", ", ")")
+    }
+
 //  if (name == "PolyK2") {
 //    println("types:")
 //    for (t <- typeParams)
