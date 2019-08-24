@@ -10,6 +10,7 @@ object BooPickle extends Generator {
 
   @Lenses
   final case class Options(conciseSingleFields: Boolean,
+                           objectCodecs: Boolean,
                            keyConstants: Boolean)
 
   override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] = {
@@ -30,7 +31,11 @@ object BooPickle extends Generator {
 
   private def genObj(obj: Obj, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
     import obj._
-    s"${mkDef(obj)} =\n  ConstPickler($name)" :: Nil
+
+    if (opt.objectCodecs)
+      s"${mkDef(obj)} =\n  ConstPickler($name)" :: Nil
+    else
+      Nil
   }
 
   // ===================================================================================================================
@@ -73,6 +78,11 @@ object BooPickle extends Generator {
     if (concreteTransitiveChildren.isEmpty)
       return Nil
 
+    val conciseObjects = !opt.objectCodecs
+
+    val conciseObjectsOnly =
+      conciseObjects && concreteTransitiveChildren.forall(_.isInstanceOf[Obj])
+
     def cases(f: (TypeDef.Concrete, Int) => String) =
       concreteTransitiveChildren.iterator.zipWithIndex.map(f.tupled).mkString("\n")
 
@@ -86,17 +96,26 @@ object BooPickle extends Generator {
         ""
 
     def write(t: TypeDef.Concrete, key: Int) = {
+      var suffix = "; state.pickle(b)"
       val caseClause = t match {
         case c: Cls => s"b: ${maxNameLen.pad(c.name)}"
-        case o: Obj => s"b@ ${maxNameLen.pad(o.name)}"
+        case o: Obj =>
+          if (conciseObjects) suffix = ""
+          if (conciseObjectsOnly)  maxNameLen.pad(o.name)
+          else if (conciseObjects) s"${maxNameLen.pad(o.name)}   "
+          else                     s"b@ ${maxNameLen.pad(o.name)}"
       }
       val k = if (opt.keyConstants) mkKey(t) else key
-      s"        case $caseClause => state.enc.writeByte($k); state.pickle(b)"
+      s"        case $caseClause => state.enc.writeByte($k)$suffix"
     }
 
     def read(t: TypeDef.Concrete, key: Int) = {
       val k = if (opt.keyConstants) mkKey(t) else key
-      s"        case $k => state.unpickle[${t.typeName}]"
+      val body = t match {
+        case o: Obj if conciseObjects => o.name
+        case _                        => s"state.unpickle[${t.typeName}]"
+      }
+      s"        case $k => $body"
     }
 
     s"""${mkDef(sb)} =

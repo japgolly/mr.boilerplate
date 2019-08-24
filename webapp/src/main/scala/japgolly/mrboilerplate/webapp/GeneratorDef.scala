@@ -38,6 +38,7 @@ object GeneratorDef {
     override def renderOptions(s: StateSnapshot[BooPickle.Options]) =
       <.div(
         checkbox(s)(BooPickle.Options.conciseSingleFields, "Concise single-field codecs"),
+        checkbox(s)(BooPickle.Options.objectCodecs       , "Generate object codecs"),
         checkbox(s)(BooPickle.Options.keyConstants       , "Constants for sum-type tags"),
       )
   }

@@ -37,7 +37,8 @@ object Default {
 
       BooPickle.Options(
         conciseSingleFields = true,
-        keyConstants = true,
+        objectCodecs = false,
+        keyConstants = false,
       ),
 
     ))

@@ -11,6 +11,7 @@ object BooPickleTest extends TestSuite {
 
   private val booPickleOptions = BooPickle.Options(
     conciseSingleFields = true,
+    objectCodecs = true,
     keyConstants = false,
   )
 
@@ -153,6 +154,61 @@ object BooPickleTest extends TestSuite {
       SealedBase("Base", Nil, Nil, List(
       SealedBase("A", Nil, List("Base"), Nil),
     )))()
+
+    'conciseObjectsNoObjs -
+      assertGen(Obj("A", Nil), booPickleOptions.copy(objectCodecs = false))()
+
+    'conciseObjectsAdtObjs - assertGen(
+      SealedBase("Base", Nil, Nil, List(
+        Obj("A", Nil),
+        Obj("Bee", Nil),
+        Obj("O", Nil),
+      )),
+      booPickleOptions.copy(objectCodecs = false)
+    )(
+      """
+        |implicit val picklerBase: Pickler[Base] =
+        |  new Pickler[Base] {
+        |    override def pickle(a: Base)(implicit state: PickleState): Unit =
+        |      a match {
+        |        case A   => state.enc.writeByte(0)
+        |        case Bee => state.enc.writeByte(1)
+        |        case O   => state.enc.writeByte(2)
+        |      }
+        |    override def unpickle(implicit state: UnpickleState): Base =
+        |      state.dec.readByte match {
+        |        case 0 => A
+        |        case 1 => Bee
+        |        case 2 => O
+        |      }
+        |  }
+      """.stripMargin.trim)
+
+    'conciseObjectsAdtMix - assertGen(
+      SealedBase("Base", Nil, Nil, List(
+        Cls("A", Nil, List("a" -> "Int"), List("Base")),
+        Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
+        Obj("O", Nil),
+      )),
+      booPickleOptions.copy(objectCodecs = false)
+    )(
+      """
+        |implicit val picklerBase: Pickler[Base] =
+        |  new Pickler[Base] {
+        |    override def pickle(a: Base)(implicit state: PickleState): Unit =
+        |      a match {
+        |        case b: A   => state.enc.writeByte(0); state.pickle(b)
+        |        case b: Bee => state.enc.writeByte(1); state.pickle(b)
+        |        case O      => state.enc.writeByte(2)
+        |      }
+        |    override def unpickle(implicit state: UnpickleState): Base =
+        |      state.dec.readByte match {
+        |        case 0 => state.unpickle[A]
+        |        case 1 => state.unpickle[Bee]
+        |        case 2 => O
+        |      }
+        |  }
+      """.stripMargin.trim)
 
   }
 }
