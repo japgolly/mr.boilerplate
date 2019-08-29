@@ -15,11 +15,13 @@ sealed trait TypeDef {
   val typeParams: List[Type]
   val superTypes: List[Type]
 
+  def mapName(f: String => String): TypeDef
+
   def suffix(implicit g: GlobalOptions): String =
     if (g.shortInstanceNames)
       ""
     else
-      name.withHeadUpper
+      name.filterNot(_ == '.').withHeadUpper
 
   final def valDef(implicit g: GlobalOptions): String =
     if (typeParams.nonEmpty)
@@ -73,6 +75,11 @@ final case class SealedBase(name            : String,
 
   override val typeName =
     name
+
+  override def mapName(f: String => String): SealedBase =
+    copy(
+      name = f(name),
+      directChildren = directChildren.map(_.mapName(f)))
 
   override def typeParamDefsAndEvTC(tc: String) =
     typeParamDefs + implicitPolyCaseEvDecl(tc)
@@ -141,6 +148,9 @@ final case class Cls(name      : String,
 
   override val typeName =
     name
+
+  override def mapName(f: String => String): Cls =
+    copy(name = f(name))
 
   implicit lazy val maxFieldLen: MaxLen =
     MaxLen.derive(fields.iterator.map(_.name.value))
@@ -225,6 +235,9 @@ final case class Obj(name      : String,
                      superTypes: List[Type]) extends TypeDef.Concrete {
 
   override val typeName = name + ".type"
+
+  override def mapName(f: String => String): Obj =
+    copy(name = f(name))
 
   override def toString: String = {
     val tp = if (typeParams.isEmpty) "" else typeParams.mkString("[", ", ", "]")

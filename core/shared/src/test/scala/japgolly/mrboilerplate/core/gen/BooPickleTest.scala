@@ -233,5 +233,13 @@ object BooPickleTest extends TestSuite {
         |      }
         |  }
       """.stripMargin.trim)
+
+    'prefixedMono - assertGen(
+      Cls("Blah.Username", Nil, List("value" -> "String"), Nil)
+    )(
+      """
+        |implicit val picklerBlahUsername: Pickler[Blah.Username] =
+        |  transformPickler(Blah.Username.apply)(_.value)
+        |""".stripMargin)
   }
 }
