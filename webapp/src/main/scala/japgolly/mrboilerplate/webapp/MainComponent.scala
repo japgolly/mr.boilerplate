@@ -34,7 +34,7 @@ object MainComponent {
     private val inputSS = StateSnapshot.withReuse.zoomL(State.input).prepareVia($)
     private val genSS   = StateSnapshot.withReuse.zoomL(State.gen).prepareVia($)
 
-    private val pxInputText  = Px.state($).map(_.input.mainText).withReuse.autoRefresh
+    private val pxInputText  = Px.state($).map(_.input.mainText2).withReuse.autoRefresh
     private val pxGen        = Px.state($).map(_.gen).withReuse.autoRefresh
     private val pxParsed     = pxInputText.map(InputParser.parse).withReuse
     private val pxParsedKO   = pxParsed.map(_.iterator.map(_.failure).filterDefined.to[List]).withReuse

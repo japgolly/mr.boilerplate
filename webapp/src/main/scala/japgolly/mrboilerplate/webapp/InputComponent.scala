@@ -18,6 +18,7 @@ object InputComponent {
   @Lenses
   final case class State(typePrefix: String,
                          mainText: String) {
+    val mainText2 = mainText.replaceFirst("[\\s{]+$", "")
     val typePrefix2 = typePrefix.filterNot(_.isWhitespace)
   }
 
