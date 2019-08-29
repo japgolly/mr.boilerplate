@@ -88,7 +88,7 @@ object BooPickle extends Generator {
       children.iterator.zipWithIndex.map(f.tupled).mkString("\n")
 
     def mkKey(t: TypeDef.Concrete) =
-      "Key" + maxNameLen.pad(t.name.withHeadUpper)
+      "Key" + maxTailSuffixLen.pad(t.tailSuffix)
 
     val keys =
       if (opt.keyConstants)
@@ -138,6 +138,6 @@ object BooPickle extends Generator {
 
   private def mkDef(td: TypeDef)(implicit g: GlobalOptions): String = {
     import td._
-    s"implicit $valDef pickler$suffix${typeParamDefsAndEvTC("Pickler")}: Pickler[$typeNamePoly]"
+    s"implicit $valDef pickler$instanceNameSuffix${typeParamDefsAndEvTC("Pickler")}: Pickler[$typeNamePoly]"
   }
 }

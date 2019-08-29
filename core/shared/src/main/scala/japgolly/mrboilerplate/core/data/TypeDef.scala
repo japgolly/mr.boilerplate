@@ -17,11 +17,19 @@ sealed trait TypeDef {
 
   def mapName(f: String => String): TypeDef
 
-  def suffix(implicit g: GlobalOptions): String =
+  /** the last part of the name as a suffix */
+  lazy val tailSuffix =
+    name.replaceFirst("^.*\\.", "").withHeadUpper
+
+  /** the whole name as a suffix */
+  lazy val wholeSuffix =
+    name.filterNot(_ == '.').withHeadUpper
+
+  def instanceNameSuffix(implicit g: GlobalOptions): String =
     if (g.shortInstanceNames)
       ""
     else
-      name.filterNot(_ == '.').withHeadUpper
+      wholeSuffix
 
   final def valDef(implicit g: GlobalOptions): String =
     if (typeParams.nonEmpty)
@@ -113,6 +121,12 @@ final case class SealedBase(name            : String,
 
     lazy val maxNameLen: MaxLen =
       MaxLen.derive(children.map(_.name))
+
+    lazy val maxTailSuffixLen: MaxLen =
+      MaxLen.derive(children.map(_.tailSuffix))
+
+    lazy val maxWholeSuffixLen: MaxLen =
+      MaxLen.derive(children.map(_.wholeSuffix))
 
     lazy val maxTypeNameLen: MaxLen =
       MaxLen.derive(children.map(_.typeName))

@@ -56,7 +56,7 @@ object Circe extends Generator {
     import cls._
 
     def mkKey(f: String) =
-      "CirceKey" + suffix + f.withHeadUpper
+      "CirceKey" + instanceNameSuffix + f.withHeadUpper
 
     def quoteOrKey(f: FieldName) =
       if (opt.keyConstants) mkKey(f.value) else f.quote
@@ -177,8 +177,8 @@ object Circe extends Generator {
 
   private def mkDef(td: TypeDef)(implicit g: GlobalOptions): (String, String) = {
     import td._
-    val d = s"implicit $valDef decoder$suffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$typeNamePoly]"
-    val e = s"implicit $valDef encoder$suffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$typeNamePoly]"
+    val d = s"implicit $valDef decoder$instanceNameSuffix${typeParamDefsAndEvTC("Decoder")}: Decoder[$typeNamePoly]"
+    val e = s"implicit $valDef encoder$instanceNameSuffix${typeParamDefsAndEvTC("Encoder")}: Encoder[$typeNamePoly]"
     (d, e)
   }
 
