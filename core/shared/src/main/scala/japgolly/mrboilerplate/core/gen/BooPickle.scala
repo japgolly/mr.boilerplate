@@ -73,18 +73,19 @@ object BooPickle extends Generator {
   // ===================================================================================================================
 
   private def genSB(sb: SealedBase, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
-    import sb.{concreteTransitiveChildrenMaxNameLen => maxNameLen, _}
+    import sb._
+    import sb.concreteTransitiveChildren._
 
-    if (concreteTransitiveChildren.isEmpty)
+    if (children.isEmpty)
       return Nil
 
     val conciseObjects = !opt.objectCodecs
 
     val conciseObjectsOnly =
-      conciseObjects && concreteTransitiveChildren.forall(_.isInstanceOf[Obj])
+      conciseObjects && children.forall(_.isInstanceOf[Obj])
 
     def cases(f: (TypeDef.Concrete, Int) => String) =
-      concreteTransitiveChildren.iterator.zipWithIndex.map(f.tupled).mkString("\n")
+      children.iterator.zipWithIndex.map(f.tupled).mkString("\n")
 
     def mkKey(t: TypeDef.Concrete) =
       "Key" + maxNameLen.pad(t.name.withHeadUpper)
@@ -96,14 +97,15 @@ object BooPickle extends Generator {
         ""
 
     def write(t: TypeDef.Concrete, key: Int) = {
+      val maxLen = maxCaseTypeLen
       var suffix = "; state.pickle(b)"
       val caseClause = t match {
-        case c: Cls => s"b: ${maxNameLen.pad(c.name)}"
+        case c: Cls => s"b: ${maxLen.pad(c.typeNamePoly)}"
         case o: Obj =>
           if (conciseObjects) suffix = ""
-          if (conciseObjectsOnly)  maxNameLen.pad(o.name)
-          else if (conciseObjects) s"${maxNameLen.pad(o.name)}   "
-          else                     s"b@ ${maxNameLen.pad(o.name)}"
+          if (conciseObjectsOnly)  maxLen.pad(o.name)
+          else if (conciseObjects) s"${maxLen.pad(o.name)}   "
+          else                     s"b@ ${maxLen.pad(o.name)}"
       }
       val k = if (opt.keyConstants) mkKey(t) else key
       s"        case $caseClause => state.enc.writeByte($k)$suffix"
@@ -113,7 +115,7 @@ object BooPickle extends Generator {
       val k = if (opt.keyConstants) mkKey(t) else key
       val body = t match {
         case o: Obj if conciseObjects => o.name
-        case _                        => s"state.unpickle[${t.typeName}]"
+        case _                        => s"state.unpickle[${t.typeNamePoly}]"
       }
       s"        case $k => $body"
     }

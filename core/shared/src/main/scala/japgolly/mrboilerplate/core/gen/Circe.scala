@@ -121,12 +121,10 @@ object Circe extends Generator {
   // ===================================================================================================================
 
   private def genSB(sb: SealedBase, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
-    import sb.{
-      concreteTransitiveChildrenMaxNameLen     => maxNameLen,
-      concreteTransitiveChildrenMaxTypeNameLen => maxTypeNameLen,
-      _}
+    import sb._
+    import sb.concreteTransitiveChildren._
 
-    if (concreteTransitiveChildren.isEmpty)
+    if (children.isEmpty)
       return Nil
 
     def keyFor(t: TypeDef.Concrete) = maxNameLen.pad2("\"" + t.name.withHeadLower + "\"")
@@ -136,33 +134,33 @@ object Circe extends Generator {
 
         case SumTypeFormat.TypeToValue =>
           def decCase(t: TypeDef.Concrete) = t match {
-            case c: Cls => s"  case (${keyFor(c)}, c) => c.as[${c.name}]"
+            case c: Cls => s"  case (${keyFor(c)}, c) => c.as[${c.typeNamePoly}]"
             case o: Obj => s"  case (${keyFor(o)}, _) => Right(${o.name})"
           }
           val d =
             s"""| decodeSumBySoleKey {
-                |${concreteTransitiveChildren.map(decCase).mkString("\n")}
+                |${children.map(decCase).mkString("\n")}
                 |}""".stripMargin
           def encCase(t: TypeDef.Concrete) = t match {
-            case c: Cls => s"  case a: ${maxNameLen.pad(c.name)} => Json.obj(${keyFor(c)} -> a.asJson)"
-            case o: Obj => s"  case a@ ${maxNameLen.pad(o.name)} => Json.obj(${keyFor(o)} -> a.asJson)"
+            case c: Cls => s"  case a: ${maxCaseTypeLen.pad(c.typeNamePoly)} => Json.obj(${keyFor(c)} -> a.asJson)"
+            case o: Obj => s"  case a@ ${maxCaseTypeLen.pad(o.name)        } => Json.obj(${keyFor(o)} -> a.asJson)"
           }
           val e =
             s"""| Encoder.instance {
-                |${concreteTransitiveChildren.map(encCase).mkString("\n")}
+                |${children.map(encCase).mkString("\n")}
                 |}""".stripMargin
           (d, e)
 
         case SumTypeFormat.UntaggedUnion =>
           def decCase(t: TypeDef.Concrete) = s"\n  Decoder[${maxTypeNameLen.pad(t.typeName)}].widen[$name]"
-          val d = concreteTransitiveChildren.map(decCase).mkString(" or")
+          val d = children.map(decCase).mkString(" or")
           def encCase(t: TypeDef.Concrete) = t match {
-            case c: Cls => s"  case a: ${maxNameLen.pad(c.name)} => a.asJson"
-            case o: Obj => s"  case a@ ${maxNameLen.pad(o.name)} => a.asJson"
+            case c: Cls => s"  case a: ${maxCaseTypeLen.pad(c.typeNamePoly)} => a.asJson"
+            case o: Obj => s"  case a@ ${maxCaseTypeLen.pad(o.name)        } => a.asJson"
           }
           val e =
             s"""| Encoder.instance {
-                |${concreteTransitiveChildren.map(encCase).mkString("\n")}
+                |${children.map(encCase).mkString("\n")}
                 |}""".stripMargin
           (d, e)
       }
@@ -186,7 +184,7 @@ object Circe extends Generator {
 
   override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions) = {
     val sumTypeExists = data.exists {
-      case s: SealedBase       => s.concreteTransitiveChildren.nonEmpty
+      case s: SealedBase       => s.concreteTransitiveChildren.children.nonEmpty
       case _: TypeDef.Concrete => false
     }
 

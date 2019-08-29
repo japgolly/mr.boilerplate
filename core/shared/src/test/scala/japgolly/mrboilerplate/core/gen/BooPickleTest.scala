@@ -210,5 +210,28 @@ object BooPickleTest extends TestSuite {
         |  }
       """.stripMargin.trim)
 
+    'adtPoly - assertGen(
+      SealedBase("Base", List("X", "Y"), Nil, List(
+        Cls("A", List("X"), List("a" -> "Int"), List("Base")),
+        Cls("Bee", List("Y, X"), List("b" -> "Long"), List("Base")),
+        Obj("O", Nil),
+      )))(
+      """
+        |implicit def picklerBase[X, Y](implicit p1: Pickler[A[X]], p2: Pickler[Bee[Y, X]]): Pickler[Base[X, Y]] =
+        |  new Pickler[Base[X, Y]] {
+        |    override def pickle(a: Base[X, Y])(implicit state: PickleState): Unit =
+        |      a match {
+        |        case b: A[X]      => state.enc.writeByte(0); state.pickle(b)
+        |        case b: Bee[Y, X] => state.enc.writeByte(1); state.pickle(b)
+        |        case b@ O         => state.enc.writeByte(2); state.pickle(b)
+        |      }
+        |    override def unpickle(implicit state: UnpickleState): Base[X, Y] =
+        |      state.dec.readByte match {
+        |        case 0 => state.unpickle[A[X]]
+        |        case 1 => state.unpickle[Bee[Y, X]]
+        |        case 2 => state.unpickle[O.type]
+        |      }
+        |  }
+      """.stripMargin.trim)
   }
 }

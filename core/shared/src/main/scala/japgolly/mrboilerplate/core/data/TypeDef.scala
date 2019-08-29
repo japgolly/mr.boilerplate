@@ -5,7 +5,9 @@ import japgolly.microlibs.utils.Memo
 import japgolly.mrboilerplate.core.MaxLen
 import japgolly.mrboilerplate.core.StringUtils._
 import japgolly.mrboilerplate.core.gen.GlobalOptions
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq.UnivEq
+import scala.collection.immutable.SortedSet
 
 sealed trait TypeDef {
   val name      : String
@@ -73,24 +75,50 @@ final case class SealedBase(name            : String,
     name
 
   override def typeParamDefsAndEvTC(tc: String) =
-    typeParamDefs
+    typeParamDefs + implicitPolyCaseEvDecl(tc)
 
-  lazy val concreteTransitiveChildren: List[TypeDef.Concrete] =
-    MutableArray(
-    directChildren
-      .toIterator
-      .flatMap {
-        case s: SealedBase => s.concreteTransitiveChildren
-        case c: Cls        => c :: Nil
-        case o: Obj        => o :: Nil
+  /** `(implicit t1: TC[Case1[A]])` */
+  def implicitPolyCaseEvDecl(tc: String): String = {
+    val prefix = tc.head.toLower
+    val implicits =
+      concreteTransitiveChildren.children.iterator.flatMap {
+        case c: Cls => Option.when(c.typeParams.nonEmpty)(c.typeNamePoly)
+        case _: Obj => None
+      }.to[SortedSet].iterator.zipWithIndex.map {
+        case ((typ, num)) => s"$prefix${num + 1}: $tc[$typ]"
       }
-    ).sortBy(_.name).to[List]
+    if (implicits.isEmpty) "" else implicits.mkString("(implicit ", ", ", ")")
+  }
 
-  lazy val concreteTransitiveChildrenMaxNameLen: MaxLen =
-    MaxLen.derive(concreteTransitiveChildren.map(_.name))
+  object concreteTransitiveChildren {
 
-  lazy val concreteTransitiveChildrenMaxTypeNameLen: MaxLen =
-    MaxLen.derive(concreteTransitiveChildren.map(_.typeName))
+    lazy val children: List[TypeDef.Concrete] =
+      MutableArray(
+        directChildren
+          .toIterator
+          .flatMap {
+            case s: SealedBase => s.concreteTransitiveChildren.children
+            case c: Cls        => c :: Nil
+            case o: Obj        => o :: Nil
+          }
+      ).sortBy(_.name).to[List]
+
+
+    lazy val maxNameLen: MaxLen =
+      MaxLen.derive(children.map(_.name))
+
+    lazy val maxTypeNameLen: MaxLen =
+      MaxLen.derive(children.map(_.typeName))
+
+    lazy val maxTypeNamePolyLen: MaxLen =
+      MaxLen.derive(children.map(_.typeNamePoly))
+
+    lazy val maxCaseTypeLen: MaxLen =
+      MaxLen.derive(children.map {
+        case c: Cls => c.typeNamePoly
+        case o: Obj => o.name
+      })
+  }
 }
 
 object SealedBase {
@@ -159,13 +187,15 @@ final case class Cls(name      : String,
         .mkString("[", ", ", "]")
     }
 
-  def implicitHkEv(tc: String): List[Field] =
+  def implicitHkEv(tc: String): List[Field] = {
+    val prefix = tc.head.toLower.toString
     fields
       .iterator
       .filter(f => typeParams.exists(t => t.isHK && f.typ.contains(t)))
       .zipWithIndex
-      .map { case (f, i) => Field(FieldName("ev" + (i + 1)), Type(s"$tc[${f.typ}]")) }
+      .map { case (f, i) => Field(FieldName(prefix + (i + 1)), Type(s"$tc[${f.typ}]")) }
       .toList
+  }
 
   /** `(implicit ev1: TC[F[A]])` */
   def implicitHkEvDecl(tc: String): String =
