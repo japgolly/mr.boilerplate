@@ -92,10 +92,13 @@ object Generator {
         r1.result().mkString("\n\n")
       }
 
-    if (header.isEmpty)
-      body
-    else
-      header + seperator + body
+    val headerAndBody =
+      if (header.isEmpty)
+        body
+      else
+        header + seperator + body
+
+    headerAndBody + "\n"
   }
 
   private val seperator = "\n\n"
