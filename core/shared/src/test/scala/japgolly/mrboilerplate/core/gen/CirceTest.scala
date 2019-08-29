@@ -28,7 +28,11 @@ object CirceTest extends TestSuite {
                        )(expect: String*)
                        (implicit l: Line): Unit = {
     val actual = Circe.gen(opt)(glopt)(td)
-    assertSeq(actual, expect.map(_.trim))
+    val expect2 = expect.map(_.trim)
+    if (actual.size == expect2.size)
+      actual.indices.foreach(i => assertMultiline(actual(i), expect2(i)))
+    else
+      assertSeq(actual, expect2)
   }
 
   override def tests = Tests {
@@ -98,11 +102,11 @@ object CirceTest extends TestSuite {
       Cls("Poly", List("F[_, _[_]]", "A"), List("fa" -> "F[A]"), Nil)
     )(
       """
-        |implicit def decoderPoly[F[_, _[_]], A](implicit ev1: Decoder[F[A]]): Decoder[Poly[F, A]] =
+        |implicit def decoderPoly[F[_, _[_]], A](implicit d1: Decoder[F[A]]): Decoder[Poly[F, A]] =
         |  Decoder.forProduct1("fa")(Poly.apply[F, A])
         |""".stripMargin,
       """
-        |implicit def encoderPoly[F[_, _[_]], A](implicit ev1: Encoder[F[A]]): Encoder[Poly[F, A]] =
+        |implicit def encoderPoly[F[_, _[_]], A](implicit e1: Encoder[F[A]]): Encoder[Poly[F, A]] =
         |  Encoder.forProduct1("fa")(_.fa)
         |""".stripMargin)
 
@@ -111,11 +115,11 @@ object CirceTest extends TestSuite {
       glopt = globalOptions.copy(shortInstanceNames = true)
     )(
       """
-        |implicit def decoder[F[_], A: Decoder, B: Decoder](implicit ev1: Decoder[F[A]]): Decoder[PolyK2[F, A, B]] =
+        |implicit def decoder[F[_], A: Decoder, B: Decoder](implicit d1: Decoder[F[A]]): Decoder[PolyK2[F, A, B]] =
         |  Decoder.forProduct3("fa", "a", "b")(PolyK2.apply[F, A, B])
         |""".stripMargin,
       """
-        |implicit def encoder[F[_], A: Encoder, B: Encoder](implicit ev1: Encoder[F[A]]): Encoder[PolyK2[F, A, B]] =
+        |implicit def encoder[F[_], A: Encoder, B: Encoder](implicit e1: Encoder[F[A]]): Encoder[PolyK2[F, A, B]] =
         |  Encoder.forProduct3("fa", "a", "b")(a => (a.fa, a.a, a.b))
         |""".stripMargin)
 
@@ -263,5 +267,28 @@ object CirceTest extends TestSuite {
       SealedBase("A", Nil, List("Base"), Nil),
     )))()
 
+    'adtPoly - assertGen(
+      SealedBase("Base", List("X", "Y"), Nil, List(
+        Cls("A", List("X"), List("a" -> "Int"), List("Base")),
+        Cls("Bee", List("Y, X"), List("b" -> "Long"), List("Base")),
+        Obj("O", Nil),
+      )),
+      glopt = globalOptions.copy(shortInstanceNames = true)
+    )(
+      """
+        |implicit def decoder[X, Y](implicit d1: Decoder[A[X]], d2: Decoder[Bee[Y, X]]): Decoder[Base[X, Y]] = decodeSumBySoleKey {
+        |  case ("a"  , c) => c.as[A[X]]
+        |  case ("bee", c) => c.as[Bee[Y, X]]
+        |  case ("o"  , _) => Right(O)
+        |}
+      """.stripMargin.trim,
+      """
+        |implicit def encoder[X, Y](implicit e1: Encoder[A[X]], e2: Encoder[Bee[Y, X]]): Encoder[Base[X, Y]] = Encoder.instance {
+        |  case a: A[X]      => Json.obj("a"   -> a.asJson)
+        |  case a: Bee[Y, X] => Json.obj("bee" -> a.asJson)
+        |  case a@ O         => Json.obj("o"   -> a.asJson)
+        |}
+      """.stripMargin.trim,
+    )
   }
 }

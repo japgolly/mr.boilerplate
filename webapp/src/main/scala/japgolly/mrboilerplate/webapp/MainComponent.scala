@@ -18,13 +18,13 @@ object MainComponent {
   }
 
   @Lenses
-  final case class State(input: String,
+  final case class State(input: InputComponent.State,
                          gen: GeneratorsComponent.State)
 
   object State {
 
     def init = apply(
-      input = Default.input,
+      input = InputComponent.State.init,
       gen   = GeneratorsComponent.State.init,
     )
   }
@@ -34,11 +34,18 @@ object MainComponent {
     private val inputSS = StateSnapshot.withReuse.zoomL(State.input).prepareVia($)
     private val genSS   = StateSnapshot.withReuse.zoomL(State.gen).prepareVia($)
 
-    private val pxInput    = Px.state($).map(_.input).withReuse.autoRefresh
-    private val pxGen      = Px.state($).map(_.gen).withReuse.autoRefresh
-    private val pxParsed   = pxInput.map(InputParser.parse).withReuse
-    private val pxParsedOK = pxParsed.map(_.iterator.map(_.success).filterDefined.map(_.value).to[ListSet]).withReuse
-    private val pxParsedKO = pxParsed.map(_.iterator.map(_.failure).filterDefined.to[List]).withReuse
+    private val pxInputText  = Px.state($).map(_.input.mainText2).withReuse.autoRefresh
+    private val pxGen        = Px.state($).map(_.gen).withReuse.autoRefresh
+    private val pxParsed     = pxInputText.map(InputParser.parse).withReuse
+    private val pxParsedKO   = pxParsed.map(_.iterator.map(_.failure).filterDefined.to[List]).withReuse
+    private val pxParsedOK1  = pxParsed.map(_.iterator.map(_.success).filterDefined.map(_.value).to[ListSet]).withReuse
+    private val pxTypePrefix = Px.state($).map(_.input.typePrefix2).withReuse.autoRefresh
+
+    private val pxParsedOK =
+      for {
+        defs   <- pxParsedOK1
+        prefix <- pxTypePrefix
+      } yield if (prefix.isEmpty) defs else defs.map(_.mapName(prefix + _))
 
     private val pxOutput =
       for {

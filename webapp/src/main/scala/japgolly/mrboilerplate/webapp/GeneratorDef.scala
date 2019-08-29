@@ -17,7 +17,7 @@ sealed trait GeneratorDef {
 
   final def title = gen.title
 
-  val foldOptions: ((Circe.Options, UnivEqGen.Options)) => gen.Options
+  val foldOptions: ((Circe.Options, UnivEqGen.Options, BooPickle.Options)) => gen.Options
 }
 
 object GeneratorDef {
@@ -27,6 +27,21 @@ object GeneratorDef {
   val values = AdtMacros.adtValues[GeneratorDef].sortBy(_.title)
 
   // ===================================================================================================================
+
+  case object BooPickleDef extends GeneratorDef {
+    override val gen = BooPickle
+
+    override val enabledByDefault = false
+
+    override val foldOptions = _._3
+
+    override def renderOptions(s: StateSnapshot[BooPickle.Options]) =
+      <.div(
+        checkbox(s)(BooPickle.Options.conciseSingleFields, "Concise single-field codecs"),
+        checkbox(s)(BooPickle.Options.objectCodecs       , "Generate object codecs"),
+        checkbox(s)(BooPickle.Options.keyConstants       , "Constants for sum-type tags"),
+      )
+  }
 
   case object CirceDef extends GeneratorDef {
     override val gen = Circe
