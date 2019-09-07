@@ -17,11 +17,11 @@ object InputParserTest extends TestSuite {
 
   override def tests = Tests {
 
-    'empty - assertParse("")()
+    "empty" - assertParse("")()
 
-    'whitespace - assertParse("  \n ")()
+    "whitespace" - assertParse("  \n ")()
 
-    'mono - {
+    "mono" - {
       val input =
       """
         |  package japgolly.mrboilerplate.core
@@ -47,7 +47,7 @@ object InputParserTest extends TestSuite {
       )
     }
 
-    'poly - {
+    "poly" - {
       val input =
       """
         |// blah
@@ -58,7 +58,7 @@ object InputParserTest extends TestSuite {
       )
     }
 
-    'partial - {
+    "partial" - {
       val input =
       """
         |asdfjhkasgdflkjsa
@@ -83,7 +83,7 @@ object InputParserTest extends TestSuite {
       )
     }
 
-    'unsealed - {
+    "unsealed" - {
       val input =
         """
           |trait Event
@@ -107,7 +107,7 @@ object InputParserTest extends TestSuite {
       )
     }
 
-    'superTraits - {
+    "superTraits" - {
       val input =
         """
           |sealed trait Event
@@ -123,7 +123,7 @@ object InputParserTest extends TestSuite {
       assertParse(input)(e, ae, x)
     }
 
-    'superClasses - {
+    "superClasses" - {
       val input =
         """
           |sealed abstract class Event
@@ -139,7 +139,7 @@ object InputParserTest extends TestSuite {
       assertParse(input)(e, ae, x)
     }
 
-    'twoDefs - {
+    "twoDefs" - {
       val input =
         """
           |sealed trait A[+W] {
@@ -158,7 +158,7 @@ object InputParserTest extends TestSuite {
         SealedBase("B", List("W"), Nil, Nil))
     }
 
-    'annotations - {
+    "annotations" - {
       val input =
         """
           |@Lenses sealed trait A
@@ -169,7 +169,7 @@ object InputParserTest extends TestSuite {
         Cls("B", Nil, Nil, Nil))
     }
 
-    'decls - {
+    "decls" - {
       val input =
         """
           |type A = X
@@ -180,7 +180,7 @@ object InputParserTest extends TestSuite {
       assertParse(input)(Cls("B", Nil, Nil, Nil))
     }
 
-    'nested - {
+    "nested" - {
       val input =
         """
           |object O {
@@ -196,7 +196,7 @@ object InputParserTest extends TestSuite {
         Cls("C", Nil, Nil, Nil))
     }
 
-    'obj - {
+    "obj" - {
       val input =
         """
           |sealed trait X
@@ -216,7 +216,7 @@ object InputParserTest extends TestSuite {
         Obj("C",  Nil))
     }
 
-    'objBody - {
+    "objBody" - {
       val body = "{ def x = 1 \n val y = 2 }"
       val input =
         s"""

@@ -22,6 +22,6 @@ object UnivEqGen extends Generator {
     decl :: Nil
   }
 
-  override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] =
+  override def initStatements(data: Iterable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] =
     "import japgolly.univeq.UnivEq" :: Nil
 }

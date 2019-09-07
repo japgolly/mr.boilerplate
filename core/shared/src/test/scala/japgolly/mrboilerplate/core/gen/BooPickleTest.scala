@@ -36,7 +36,7 @@ object BooPickleTest extends TestSuite {
 
   override def tests = Tests {
 
-    'obj - assertGen(
+    "obj" - assertGen(
       Obj("X", Nil)
     )(
       """
@@ -44,7 +44,7 @@ object BooPickleTest extends TestSuite {
         |  ConstPickler(X)
         |""".stripMargin)
 
-    'mono0 - assertGen(
+    "mono0" - assertGen(
       Cls("Mono", Nil, Nil, Nil)
     )(
       """
@@ -52,7 +52,7 @@ object BooPickleTest extends TestSuite {
         |  ConstPickler(Mono())
         |""".stripMargin)
 
-    'mono1 - assertGen(
+    "mono1" - assertGen(
       Cls("Username", Nil, List("value" -> "String"), Nil)
     )(
       """
@@ -60,7 +60,7 @@ object BooPickleTest extends TestSuite {
         |  transformPickler(Username.apply)(_.value)
         |""".stripMargin)
 
-    'monoN - assertGen(
+    "monoN" - assertGen(
       Cls("Class", Nil, List("typeParams" -> "List[Type]", "fields" -> "List[Field]"), Nil)
     )(
       """
@@ -78,7 +78,7 @@ object BooPickleTest extends TestSuite {
         |  }
         |""".stripMargin)
 
-    'poly - assertGen(
+    "poly" - assertGen(
       Cls("NonEmptyList", List("A"), List("head" -> "A", "tail" -> "List[A]"), Nil),
       glopt = globalOptions.copy(shortInstanceNames = true)
     )(
@@ -97,7 +97,7 @@ object BooPickleTest extends TestSuite {
         |  }
         |""".stripMargin)
 
-    'adt - assertGen(
+    "adt" - assertGen(
       SealedBase("Base", Nil, Nil, List(
         Cls("A", Nil, List("a" -> "Int"), List("Base")),
         Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
@@ -121,7 +121,7 @@ object BooPickleTest extends TestSuite {
         |  }
       """.stripMargin.trim)
 
-    'adtWithKeys - assertGen(
+    "adtWithKeys" - assertGen(
       SealedBase("Base", Nil, Nil, List(
         Cls("A", Nil, List("a" -> "Int"), List("Base")),
         Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
@@ -150,15 +150,15 @@ object BooPickleTest extends TestSuite {
         |  }
       """.stripMargin.trim)
 
-    'adtNoInstances - assertGen(
+    "adtNoInstances" - assertGen(
       SealedBase("Base", Nil, Nil, List(
       SealedBase("A", Nil, List("Base"), Nil),
     )))()
 
-    'conciseObjectsNoObjs -
+    "conciseObjectsNoObjs" -
       assertGen(Obj("A", Nil), booPickleOptions.copy(objectCodecs = false))()
 
-    'conciseObjectsAdtObjs - assertGen(
+    "conciseObjectsAdtObjs" - assertGen(
       SealedBase("Base", Nil, Nil, List(
         Obj("A", Nil),
         Obj("Bee", Nil),
@@ -184,7 +184,7 @@ object BooPickleTest extends TestSuite {
         |  }
       """.stripMargin.trim)
 
-    'conciseObjectsAdtMix - assertGen(
+    "conciseObjectsAdtMix" - assertGen(
       SealedBase("Base", Nil, Nil, List(
         Cls("A", Nil, List("a" -> "Int"), List("Base")),
         Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
@@ -210,7 +210,7 @@ object BooPickleTest extends TestSuite {
         |  }
       """.stripMargin.trim)
 
-    'adtPoly - assertGen(
+    "adtPoly" - assertGen(
       SealedBase("Base", List("X", "Y"), Nil, List(
         Cls("A", List("X"), List("a" -> "Int"), List("Base")),
         Cls("Bee", List("Y, X"), List("b" -> "Long"), List("Base")),
@@ -234,7 +234,7 @@ object BooPickleTest extends TestSuite {
         |  }
       """.stripMargin.trim)
 
-    'prefixedMono - assertGen(
+    "prefixedMono" - assertGen(
       Cls("Blah.Username", Nil, List("value" -> "String"), Nil)
     )(
       """
