@@ -182,7 +182,7 @@ object Circe extends Generator {
     (d, e)
   }
 
-  override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions) = {
+  override def initStatements(data: Iterable[TypeDef], opt: Options)(implicit glopt: GlobalOptions) = {
     val sumTypeExists = data.exists {
       case s: SealedBase       => s.concreteTransitiveChildren.children.nonEmpty
       case _: TypeDef.Concrete => false

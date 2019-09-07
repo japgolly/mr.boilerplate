@@ -1,5 +1,6 @@
 package japgolly.mrboilerplate.core.data
 
+import scala.collection.compat._
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.Memo
 import japgolly.mrboilerplate.core.MaxLen
@@ -99,7 +100,7 @@ final case class SealedBase(name            : String,
       concreteTransitiveChildren.children.iterator.flatMap {
         case c: Cls => Option.when(c.typeParams.nonEmpty)(c.typeNamePoly)
         case _: Obj => None
-      }.to[SortedSet].iterator.zipWithIndex.map {
+      }.to(SortedSet).iterator.zipWithIndex.map {
         case ((typ, num)) => s"$prefix${num + 1}: $tc[$typ]"
       }
     if (implicits.isEmpty) "" else implicits.mkString("(implicit ", ", ", ")")
@@ -110,13 +111,13 @@ final case class SealedBase(name            : String,
     lazy val children: List[TypeDef.Concrete] =
       MutableArray(
         directChildren
-          .toIterator
+          .iterator
           .flatMap {
             case s: SealedBase => s.concreteTransitiveChildren.children
             case c: Cls        => c :: Nil
             case o: Obj        => o :: Nil
           }
-      ).sortBy(_.name).to[List]
+      ).sortBy(_.name).to(List)
 
 
     lazy val maxNameLen: MaxLen =

@@ -1,6 +1,6 @@
 package japgolly.mrboilerplate.core
 
-import scala.collection.generic.CanBuildFrom
+import scala.collection.compat._
 import japgolly.mrboilerplate.core.data._
 
 object UnsafeTypes {
@@ -14,8 +14,8 @@ object UnsafeTypes {
   implicit def fieldFromStrStr(s: (String, String)): Field =
     Field(s._1, s._2)
 
-  implicit def fieldsFromStrStr[F[x] <: Traversable[x], A](s: F[A])(implicit f: A => Field, cbf: CanBuildFrom[Nothing, Field, F[Field]]): F[Field] =
-    (cbf.apply() ++= s.toIterator.map(f)).result()
+  implicit def fieldsFromStrStr[F[x] <: Iterable[x], A](s: F[A])(implicit f: A => Field, cbf: Factory[Field, F[Field]]): F[Field] =
+    (cbf.newBuilder ++= s.iterator.map(f)).result()
 
   implicit def inputParserElementTD(a: TypeDef): InputParser.Element =
     InputParser.Element.Success(a)

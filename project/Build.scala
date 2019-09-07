@@ -17,16 +17,33 @@ object Build {
     Lib.publicationSettings(ghProject)
 
   object Ver {
-    final val BetterMonadicFor = "0.3.1"
-    final val FastParse        = "2.1.3"
-    final val MacroParadise    = "2.1.1"
-    final val Microlibs        = "1.22"
-    final val Monocle          = "1.5.0"
-    final val MTest            = "0.6.9"
-    final val Scala212         = "2.12.8"
-    final val SJSReact         = "1.4.2"
-    final val UnivEq           = "1.0.8"
+    val BetterMonadicFor = "0.3.1"
+    val FastParse        = "2.1.3"
+    val MacroParadise    = "2.1.1"
+    val Microlibs        = "2.0-RC1"
+    val Monocle          = "2.0.0-RC1"
+    val MTest            = "0.7.1"
+    val Scala212         = "2.12.9"
+    val Scala213         = "2.13.0"
+    val ScalaCollCompat  = "2.1.2"
+    val SJSReact         = "1.5.0-RC1"
+    val UnivEq           = "1.1.0-RC3"
   }
+
+  def byScalaVersion[A](f: PartialFunction[(Long, Long), Seq[A]]): Def.Initialize[Seq[A]] =
+    Def.setting(CrossVersion.partialVersion(scalaVersion.value).flatMap(f.lift).getOrElse(Nil))
+
+  def addMacroParadisePlugin = Def.settings(
+    Seq(
+      libraryDependencies ++= byScalaVersion {
+        case (2, 12) => Seq(compilerPlugin("org.scalamacros" % "paradise" % Ver.MacroParadise cross CrossVersion.patch))
+        case (2, 13) => Nil
+      }.value,
+      scalacOptions ++= byScalaVersion {
+        case (2, 12) => Nil
+        case (2, 13) => Seq("-Ymacro-annotations")
+      }.value
+    ))
 
   def scalacFlags = Seq(
     "-deprecation",
@@ -48,7 +65,8 @@ object Build {
       homepage                      := Some(url("https://github.com/japgolly/" + ghProject)),
       licenses                      += ("Apache-2.0", url("http://opensource.org/licenses/Apache-2.0")),
       startYear                     := Some(2019),
-      scalaVersion                  := Ver.Scala212,
+      scalaVersion                  := Ver.Scala213,
+      crossScalaVersions            := Seq(Ver.Scala212, Ver.Scala213),
       scalacOptions                ++= scalacFlags,
       scalacOptions in Test        --= Seq("-Ywarn-dead-code"),
       shellPrompt in ThisBuild      := ((s: State) => Project.extract(s).currentRef.project + "> "),
@@ -62,7 +80,7 @@ object Build {
       libraryDependencies ++= Seq(
         "com.lihaoyi"                   %%% "utest"     % Ver.MTest,
         "com.github.japgolly.microlibs" %%% "test-util" % Ver.Microlibs),
-      addCompilerPlugin("org.scalamacros" % "paradise" % Ver.MacroParadise cross CrossVersion.full),
+      addMacroParadisePlugin,
       addCompilerPlugin("com.olegpy" %% "better-monadic-for" % Ver.BetterMonadicFor))
       .configure(preventPublication))
 
@@ -79,15 +97,16 @@ object Build {
     .settings(
       moduleName := "core",
       libraryDependencies ++= Seq(
-        "com.lihaoyi"                   %%% "fastparse"     % Ver.FastParse,
-        "com.lihaoyi"                   %%% "scalaparse"    % Ver.FastParse,
-        "com.github.japgolly.microlibs" %%% "adt-macros"    % Ver.Microlibs,
-        "com.github.japgolly.microlibs" %%% "nonempty"      % Ver.Microlibs,
-        "com.github.japgolly.microlibs" %%% "stdlib-ext"    % Ver.Microlibs,
-        "com.github.japgolly.microlibs" %%% "utils"         % Ver.Microlibs,
-        "com.github.japgolly.univeq"    %%% "univeq"        % Ver.UnivEq,
-        "com.github.julien-truffaut"    %%% "monocle-core"  % Ver.Monocle,
-        "com.github.julien-truffaut"    %%% "monocle-macro" % Ver.Monocle))
+        "com.lihaoyi"                   %%% "fastparse"               % Ver.FastParse,
+        "com.lihaoyi"                   %%% "scalaparse"              % Ver.FastParse,
+        "com.github.japgolly.microlibs" %%% "adt-macros"              % Ver.Microlibs,
+        "com.github.japgolly.microlibs" %%% "nonempty"                % Ver.Microlibs,
+        "com.github.japgolly.microlibs" %%% "stdlib-ext"              % Ver.Microlibs,
+        "com.github.japgolly.microlibs" %%% "utils"                   % Ver.Microlibs,
+        "com.github.japgolly.univeq"    %%% "univeq"                  % Ver.UnivEq,
+        "com.github.julien-truffaut"    %%% "monocle-core"            % Ver.Monocle,
+        "com.github.julien-truffaut"    %%% "monocle-macro"           % Ver.Monocle,
+        "org.scala-lang.modules"        %%% "scala-collection-compat" % Ver.ScalaCollCompat))
 
   lazy val webapp = project
     .in(file("webapp"))
@@ -97,8 +116,8 @@ object Build {
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %%% "extra"       % Ver.SJSReact,
-        "com.github.japgolly.scalajs-react" %%% "ext-monocle" % Ver.SJSReact),
+        "com.github.japgolly.scalajs-react" %%% "extra"            % Ver.SJSReact,
+        "com.github.japgolly.scalajs-react" %%% "ext-monocle-cats" % Ver.SJSReact),
       emitSourceMaps := true,
       artifactPath in (Compile, fastOptJS) := (crossTarget.value / "mr-boilerplate.js"),
       artifactPath in (Compile, fullOptJS) := (crossTarget.value / "mr-boilerplate.js"))
