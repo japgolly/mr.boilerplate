@@ -2,6 +2,7 @@ package japgolly.mrboilerplate.webapp
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.mrboilerplate.core.InputParser
+import japgolly.mrboilerplate.core.data.SealedBase
 import japgolly.mrboilerplate.core.gen.Generator
 import japgolly.mrboilerplate.webapp.DataReusability._
 import japgolly.scalajs.react._
@@ -45,7 +46,24 @@ object MainComponent {
       for {
         defs   <- pxParsedOK1
         prefix <- pxTypePrefix
-      } yield if (prefix.isEmpty) defs else defs.map(_.mapName(prefix + _))
+      } yield
+        if (prefix.isEmpty)
+          defs
+        else
+          defs.map {
+            case s: SealedBase =>
+              import s.name
+              val newName =
+                // abc.xyz. as a prefix to xyz should return abc.xyz instead of abc.xyz.xyz
+                if (prefix.endsWith(s".$name.") || prefix == s"$name.")
+                  prefix.dropRight(1)
+                else
+                  prefix + name
+              s
+                .mapName(prefix + _) // prefix sub-types
+                .copy(name = newName)
+            case t => t.mapName(prefix + _)
+          }
 
     private val pxOutput =
       for {
