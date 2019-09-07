@@ -13,9 +13,9 @@ object BooPickle extends Generator {
                            objectCodecs: Boolean,
                            keyConstants: Boolean)
 
-  override def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] = {
+  override def initStatements(data: Iterable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] = {
     var result = "import boopickle.DefaultBasic._" :: Nil
-    val text = data.toIterator.flatMap(gen(opt)).mkString("\n")
+    val text = data.iterator.flatMap(gen(opt)).mkString("\n")
     if (text.contains("ConstPickler"))
       result ::= "import boopickle.ConstPickler"
     result

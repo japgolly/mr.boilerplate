@@ -1,5 +1,7 @@
 package japgolly.mrboilerplate.core
 
+import scala.collection.compat._
+
 final case class MaxLen(value: Int) {
   private val fmt = s"%-${value}s"
   private val fmt2 = s"%-${value+2}s"
@@ -9,9 +11,9 @@ final case class MaxLen(value: Int) {
 
 object MaxLen {
   val zero = apply(0)
-  def derive(s: TraversableOnce[String]): MaxLen =
-    if (s.isEmpty)
+  def derive(s: IterableOnce[String]): MaxLen =
+    if (s.iterator.isEmpty)
       zero
     else
-      apply(s.toIterator.map(_.length).max)
+      apply(s.iterator.map(_.length).max)
 }

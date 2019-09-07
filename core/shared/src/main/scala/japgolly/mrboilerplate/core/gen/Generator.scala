@@ -9,7 +9,7 @@ trait Generator { self =>
 
   val title: String
 
-  def initStatements(data: Traversable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] =
+  def initStatements(data: Iterable[TypeDef], opt: Options)(implicit glopt: GlobalOptions): List[String] =
     Nil
 
   def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String]
@@ -34,17 +34,17 @@ object Generator {
       Option.when(g eq gen)(this.asInstanceOf[g.AndOptions])
   }
 
-  final def apply(gens: Traversable[AndOptions], data: Traversable[TypeDef])(implicit go: GlobalOptions): String = {
+  final def apply(gens: Iterable[AndOptions], data: Iterable[TypeDef])(implicit go: GlobalOptions): String = {
 
     val preparedGens: List[TypeDef => List[String]] =
-      gens.toIterator.map(g => g.gen.gen(g.options)).toList
+      gens.iterator.map(g => g.gen.gen(g.options)).toList
 
     def gen(td: TypeDef): Iterator[String] =
-      preparedGens.toIterator.flatMap(_(td))
+      preparedGens.iterator.flatMap(_(td))
 
     val header: String = {
       val (imports, other) =
-        gens.toIterator
+        gens.iterator
           .flatMap(g => g.gen.initStatements(data, g.options))
           .partition(_.startsWith("import "))
 
@@ -60,7 +60,7 @@ object Generator {
     val body: String =
       if (go.generateCompanions) {
         // Order doesn't matter
-        data.toIterator.flatMap { td =>
+        data.iterator.flatMap { td =>
           val decls = gen(td).mkString("\n\n")
           if (decls.nonEmpty)
             s"""
@@ -75,7 +75,7 @@ object Generator {
 
       } else if (go.makeValsLazy) {
         // Order doesn't matter
-        data.toIterator.flatMap(gen).mkString("\n\n")
+        data.iterator.flatMap(gen).mkString("\n\n")
 
       } else {
         // Order matters; generate dependants first
