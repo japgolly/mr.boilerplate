@@ -4,8 +4,8 @@ cd "$(dirname "$0")"
 
 files=(
   webapp/src/main/html/index.html
-  webapp/target/scala-2.12/mr-boilerplate.js
-  webapp/target/scala-2.12/mr-boilerplate.js.map
+  webapp/target/scala-2.13/mr-boilerplate.js
+  webapp/target/scala-2.13/mr-boilerplate.js.map
 )
 
 for f in ${files[@]}; do
