@@ -26,7 +26,7 @@ object Build {
     val Scala212         = "2.12.9"
     val Scala213         = "2.13.0"
     val ScalaCollCompat  = "2.1.2"
-    val SJSReact         = "1.5.0-RC1"
+    val SJSReact         = "1.5.0-RC2"
     val UnivEq           = "1.1.0-RC3"
   }
 

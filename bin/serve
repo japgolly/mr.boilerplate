@@ -15,8 +15,8 @@ function link {
 
 link bin/serve.py
 link webapp/src/main/html/index.html
-link webapp/target/scala-2.12/mr-boilerplate.js
-link webapp/target/scala-2.12/mr-boilerplate.js.map
+link webapp/target/scala-2.13/mr-boilerplate.js
+link webapp/target/scala-2.13/mr-boilerplate.js.map
 
 echo "> ls -la $tgt"
 ls -la
