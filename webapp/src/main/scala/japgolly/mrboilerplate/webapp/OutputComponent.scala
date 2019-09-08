@@ -73,6 +73,7 @@ object OutputComponent {
           ^.tabIndex := -1,
           ^.zIndex := "-1",
           ^.opacity := "0",
+          ^.aria.hidden := true,
           ^.readOnly := true,
           ^.value := p.output),
         <.button(

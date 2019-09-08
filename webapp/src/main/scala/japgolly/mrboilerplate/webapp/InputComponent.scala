@@ -57,6 +57,7 @@ object InputComponent {
             <.input.text(
               ^.cls := "form-control",
               ^.fontFamily := "monospace",
+              ^.aria.label := "Type prefix",
               ^.value := p.state.value.typePrefix,
               onChangeTypePrefix)))
 
@@ -71,6 +72,7 @@ object InputComponent {
           ^.color := "#000",
           ^.overflow.auto,
           ^.autoFocus := true,
+          ^.aria.label := "Input source code",
           ^.value := p.state.value.mainText,
           onChangeMainText)
 
