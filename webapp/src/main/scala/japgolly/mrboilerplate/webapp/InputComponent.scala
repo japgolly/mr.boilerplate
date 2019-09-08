@@ -81,7 +81,6 @@ object InputComponent {
         ^.display.flex,
         ^.flexDirection.column,
         ^.cls := "form-group",
-        ^.height := "100%", ^.minHeight := "0", // chrome bug: https://bugs.chromium.org/p/chromium/issues/detail?id=927066
         <.header(Styles.header, "Input"),
         <.div(
           ^.flexGrow := "1",
