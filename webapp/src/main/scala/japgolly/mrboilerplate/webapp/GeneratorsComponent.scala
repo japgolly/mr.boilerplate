@@ -8,6 +8,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
+import monocle.Lens
 import monocle.macros.Lenses
 
 object GeneratorsComponent {
@@ -34,6 +35,12 @@ object GeneratorsComponent {
     def toggle(gd: GeneratorDef): State =
       copy(if (enabled.contains(gd)) enabled - gd else enabled + gd)
 
+    def setEnabled(gd: GeneratorDef, enabled: Boolean): State =
+      if (this.enabled.contains(gd) == enabled)
+        this
+      else
+        toggle(gd)
+
     def optionsFor(gd: GeneratorDef): gd.gen.Options =
       options.iterator.map(_.unify(gd.gen)).filterDefined.nextOption().fold(Default.options(gd))(_.options)
 
@@ -50,6 +57,12 @@ object GeneratorsComponent {
 
     implicit def reusability: Reusability[State] =
       Reusability.byRef
+
+    def genEnabled(gd: GeneratorDef): Lens[State, Boolean] =
+      Lens[State, Boolean](_.enabled.contains(gd))(on => _.setEnabled(gd, on))
+
+    def genOptions(gd: GeneratorDef): Lens[State, gd.gen.Options] =
+      Lens[State, gd.gen.Options](_.optionsFor(gd))(o => _.setOption(gd.gen.andOptions(o)))
   }
 
   final class Backend($: BackendScope[Props, Unit]) {

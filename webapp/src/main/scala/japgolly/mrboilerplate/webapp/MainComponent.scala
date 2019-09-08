@@ -29,6 +29,9 @@ object MainComponent {
       input = InputComponent.State.init,
       gen   = GeneratorsComponent.State.init,
     )
+
+    def rememberOrInit: CallbackTo[State] =
+      PersistentState.read.map(_.fold(init)(_(init)))
   }
 
   final class Backend($: BackendScope[Props, State]) {
@@ -80,10 +83,17 @@ object MainComponent {
         OutputComponent.Props(pxParsedKO.value(), pxOutput.value()).render,
       )
     }
+
+    val storeState: Callback =
+      for {
+        s <- $.state
+        _ <- PersistentState.write(s)
+      } yield ()
   }
 
   val Component = ScalaComponent.builder[Props]("MainComponent")
-    .initialState(State.init)
+    .initialStateCallback(State.rememberOrInit)
     .renderBackend[Backend]
+    .componentDidUpdate(_.backend.storeState)
     .build
 }
