@@ -57,6 +57,7 @@ object InputComponent {
             <.input.text(
               ^.cls := "form-control",
               ^.fontFamily := "monospace",
+              ^.aria.label := "Type prefix",
               ^.value := p.state.value.typePrefix,
               onChangeTypePrefix)))
 
@@ -71,6 +72,7 @@ object InputComponent {
           ^.color := "#000",
           ^.overflow.auto,
           ^.autoFocus := true,
+          ^.aria.label := "Input source code",
           ^.value := p.state.value.mainText,
           onChangeMainText)
 
@@ -79,7 +81,6 @@ object InputComponent {
         ^.display.flex,
         ^.flexDirection.column,
         ^.cls := "form-group",
-        ^.height := "100%", ^.minHeight := "0", // chrome bug: https://bugs.chromium.org/p/chromium/issues/detail?id=927066
         <.header(Styles.header, "Input"),
         <.div(
           ^.flexGrow := "1",

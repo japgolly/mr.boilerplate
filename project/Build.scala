@@ -18,6 +18,7 @@ object Build {
 
   object Ver {
     val BetterMonadicFor = "0.3.1"
+    val Circe            = "0.12.0-RC4"
     val FastParse        = "2.1.3"
     val MacroParadise    = "2.1.1"
     val Microlibs        = "2.0-RC1"
@@ -116,8 +117,11 @@ object Build {
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
+        "io.circe" %%% "not-java-time" % "0.2.0", // TODO Remove
         "com.github.japgolly.scalajs-react" %%% "extra"            % Ver.SJSReact,
-        "com.github.japgolly.scalajs-react" %%% "ext-monocle-cats" % Ver.SJSReact),
+        "com.github.japgolly.scalajs-react" %%% "ext-monocle-cats" % Ver.SJSReact,
+        "io.circe"                          %%% "circe-core"       % Ver.Circe,
+        "io.circe"                          %%% "circe-parser"     % Ver.Circe),
       emitSourceMaps := true,
       artifactPath in (Compile, fastOptJS) := (crossTarget.value / "mr-boilerplate.js"),
       artifactPath in (Compile, fullOptJS) := (crossTarget.value / "mr-boilerplate.js"))
