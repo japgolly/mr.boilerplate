@@ -10,15 +10,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/16.8.6/umd/react.production.min.js" integrity="sha256-3vo65ZXn5pfsCfGM5H55X+SmwJHBlyNHPwRmWAPgJnM=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.8.6/umd/react-dom.production.min.js" integrity="sha256-qVsF1ftL3vUq8RFOLwPnKimXOLo72xguDliIxeffHRc=" crossorigin="anonymous"></script>
 
+    <script src="https://kit.fontawesome.com/a5f89abab0.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/highlight.min.js" integrity="sha256-js+I1fdbke/DJrW2qXQlrw7VUEqmdeFeOW37UC0bEiU=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/languages/scala.min.js" integrity="sha256-9316BLAS8kz+morGbkvjsM7KCf2lNuvn0mE8Yu3vhoI=" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.8/styles/a11y-dark.min.css" crossorigin="anonymous" />
 
     <script src="mr-boilerplate.js"></script>
-    <style>label{margin-bottom:0}</style>
+    <style>
+        label {margin-bottom:0}
+        #links { position:absolute; top:1ex; right:.2ex; }
+        #links a { color:#666; margin-right:.8ex; }
+    </style>
 </head>
 <body>
-    <div id="root" style="min-height:100vh"></div>
+    <nav id="links">
+        <a title="Github" href="https://github.com/japgolly/mr.boilerplate"><i class="fab fa-github"></i></a>
+        <a title="@japgolly" href="https://twitter.com/japgolly"><i class="fab fa-twitter"></i></a>
+    </nav>
+    <main id="root" style="min-height:100vh"></main>
     <script>
         main();
     </script>
