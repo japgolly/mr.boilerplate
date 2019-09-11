@@ -18,11 +18,11 @@ object Build {
 
   object Ver {
     val BetterMonadicFor = "0.3.1"
-    val Circe            = "0.12.0-RC4"
+    val Circe            = "0.12.1"
     val FastParse        = "2.1.3"
     val MacroParadise    = "2.1.1"
     val Microlibs        = "2.0-RC1"
-    val Monocle          = "2.0.0-RC1"
+    val Monocle          = "2.0.0"
     val MTest            = "0.7.1"
     val Scala212         = "2.12.9"
     val Scala213         = "2.13.0"
@@ -117,7 +117,6 @@ object Build {
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
-        "io.circe" %%% "not-java-time" % "0.2.0", // TODO Remove
         "com.github.japgolly.scalajs-react" %%% "extra"            % Ver.SJSReact,
         "com.github.japgolly.scalajs-react" %%% "ext-monocle-cats" % Ver.SJSReact,
         "io.circe"                          %%% "circe-core"       % Ver.Circe,
