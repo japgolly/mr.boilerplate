@@ -96,7 +96,7 @@ object OutputComponent {
           ^.flexGrow := "1",
           ^.minHeight := "16em",
           copyButton,
-          Highlight(p.output)))
+          Highlight(p.output + "\n")))
     }
   }
 
