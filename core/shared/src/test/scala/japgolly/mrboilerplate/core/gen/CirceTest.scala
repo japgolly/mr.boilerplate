@@ -10,6 +10,7 @@ object CirceTest extends TestSuite {
   import UnsafeTypes._
 
   private val circeOptions = Circe.Options(
+    objectCodecs = true,
     singlesAsObjects = true,
     monadicObjects = false,
     keyConstants = false,
@@ -48,6 +49,11 @@ object CirceTest extends TestSuite {
         |implicit val encoderObj: Encoder[Obj.type] =
         |  Encoder.encodeUnit.contramap(_ => ())
         |""".stripMargin)
+
+    "objOff" - assertGen(
+      Obj("Obj", Nil),
+      circeOptions.copy(objectCodecs = false)
+    )()
 
     "mono0" - assertGen(
       Cls("Mono", Nil, Nil, Nil)
@@ -226,7 +232,7 @@ object CirceTest extends TestSuite {
         |implicit val decoder: Decoder[Base] = decodeSumBySoleKey {
         |  case ("a"  , c) => c.as[A]
         |  case ("bee", c) => c.as[Bee]
-        |  case ("o"  , _) => Right(O)
+        |  case ("o"  , c) => c.as[O.type]
         |}
       """.stripMargin.trim,
       """
@@ -234,6 +240,53 @@ object CirceTest extends TestSuite {
         |  case a: A   => Json.obj("a"   -> a.asJson)
         |  case a: Bee => Json.obj("bee" -> a.asJson)
         |  case a@ O   => Json.obj("o"   -> a.asJson)
+        |}
+      """.stripMargin.trim,
+    )
+
+    "adtSingleKeyNoObj" - assertGen(
+      SealedBase("Base", Nil, Nil, List(
+        Cls("A", Nil, List("a" -> "Int"), List("Base")),
+        Cls("Bee", Nil, List("b" -> "Long"), List("Base")),
+        Obj("O", Nil),
+      )),
+        circeOptions.copy(objectCodecs = false),
+        glopt = globalOptions.copy(shortInstanceNames = true)
+      )(
+      """
+        |implicit val decoder: Decoder[Base] = decodeSumBySoleKey {
+        |  case ("a"  , c) => c.as[A]
+        |  case ("bee", c) => c.as[Bee]
+        |  case ("o"  , _) => Right(O)
+        |}
+      """.stripMargin.trim,
+      """
+        |implicit val encoder: Encoder[Base] = Encoder.instance {
+        |  case a: A   => Json.obj("a"   -> a.asJson)
+        |  case a: Bee => Json.obj("bee" -> a.asJson)
+        |  case O      => Json.obj("o"   -> ().asJson)
+        |}
+      """.stripMargin.trim,
+    )
+
+    "adtObjOnlyNoCodec" - assertGen(
+      SealedBase("Base", Nil, Nil, List(
+        Obj("Bee", Nil),
+        Obj("O", Nil),
+      )),
+        circeOptions.copy(objectCodecs = false),
+        glopt = globalOptions.copy(shortInstanceNames = true)
+      )(
+      """
+        |implicit val decoder: Decoder[Base] = decodeSumBySoleKey {
+        |  case ("bee", _) => Right(Bee)
+        |  case ("o"  , _) => Right(O)
+        |}
+      """.stripMargin.trim,
+      """
+        |implicit val encoder: Encoder[Base] = Encoder.instance {
+        |  case Bee => Json.obj("bee" -> ().asJson)
+        |  case O   => Json.obj("o"   -> ().asJson)
         |}
       """.stripMargin.trim,
     )
@@ -279,7 +332,7 @@ object CirceTest extends TestSuite {
         |implicit def decoder[X, Y](implicit d1: Decoder[A[X]], d2: Decoder[Bee[Y, X]]): Decoder[Base[X, Y]] = decodeSumBySoleKey {
         |  case ("a"  , c) => c.as[A[X]]
         |  case ("bee", c) => c.as[Bee[Y, X]]
-        |  case ("o"  , _) => Right(O)
+        |  case ("o"  , c) => c.as[O.type]
         |}
       """.stripMargin.trim,
       """
@@ -290,5 +343,27 @@ object CirceTest extends TestSuite {
         |}
       """.stripMargin.trim,
     )
+
+    "adtWithPrefix" - assertGen(
+      SealedBase("Qqq.Base", List("X", "Y"), Nil, List(
+        Cls("Qqq.Bee", List("Y, X"), List("b" -> "Long"), List("Base")),
+        Obj("Qqq.O", Nil),
+      )),
+      glopt = globalOptions.copy(shortInstanceNames = true)
+    )(
+      """
+        |implicit def decoder[X, Y](implicit d1: Decoder[Qqq.Bee[Y, X]]): Decoder[Qqq.Base[X, Y]] = decodeSumBySoleKey {
+        |  case ("bee", c) => c.as[Qqq.Bee[Y, X]]
+        |  case ("o"  , c) => c.as[Qqq.O.type]
+        |}
+      """.stripMargin.trim,
+      """
+        |implicit def encoder[X, Y](implicit e1: Encoder[Qqq.Bee[Y, X]]): Encoder[Qqq.Base[X, Y]] = Encoder.instance {
+        |  case a: Qqq.Bee[Y, X] => Json.obj("bee" -> a.asJson)
+        |  case a@ Qqq.O         => Json.obj("o"   -> a.asJson)
+        |}
+      """.stripMargin.trim,
+    )
+
   }
 }

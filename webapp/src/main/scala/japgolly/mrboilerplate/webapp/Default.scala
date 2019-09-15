@@ -25,6 +25,7 @@ object Default {
     g.foldOptions((
 
       Circe.Options(
+        objectCodecs = false,
         singlesAsObjects = true,
         monadicObjects = false,
         keyConstants = false,

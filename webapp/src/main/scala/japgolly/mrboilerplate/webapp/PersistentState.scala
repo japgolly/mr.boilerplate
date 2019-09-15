@@ -110,7 +110,8 @@ object PersistentState {
     )
 
     val circe = genOptions("circe", GeneratorDef.CirceDef) {
-      case Circe.Options(_, _, _, _) => List[Field.From[Circe.Options]](
+      case Circe.Options(_, _, _, _, _) => List[Field.From[Circe.Options]](
+        Field("objectCodecs"    , Circe.Options.objectCodecs),
         Field("keyConstants"    , Circe.Options.keyConstants),
         Field("monadicObjects"  , Circe.Options.monadicObjects),
         Field("singlesAsObjects", Circe.Options.singlesAsObjects),

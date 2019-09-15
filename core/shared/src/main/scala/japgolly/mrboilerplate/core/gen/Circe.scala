@@ -1,9 +1,9 @@
 package japgolly.mrboilerplate.core.gen
 
 import japgolly.microlibs.adt_macros.AdtMacros
+import japgolly.mrboilerplate.core.MaxLen
 import japgolly.mrboilerplate.core.data._
 import japgolly.mrboilerplate.core.StringUtils._
-import japgolly.mrboilerplate.core.gen.Circe.Options.SumTypeFormat
 import monocle.macros.Lenses
 import japgolly.univeq._
 
@@ -12,11 +12,11 @@ object Circe extends Generator {
   override val title = "Circe"
 
   @Lenses
-  final case class Options(singlesAsObjects: Boolean,
+  final case class Options(objectCodecs: Boolean,
+                           singlesAsObjects: Boolean,
                            monadicObjects: Boolean,
                            keyConstants: Boolean,
-                           sumTypes: Options.SumTypeFormat,
-                          )
+                           sumTypes: Options.SumTypeFormat)
 
   object Options {
     sealed trait SumTypeFormat
@@ -27,6 +27,8 @@ object Circe extends Generator {
       val values = AdtMacros.adtValues[SumTypeFormat]
     }
   }
+
+  import Options.SumTypeFormat
 
   override def gen(opt: Options)(implicit glopt: GlobalOptions): TypeDef => List[String] = {
     case c: Cls        => genCls(c, opt)
@@ -39,15 +41,18 @@ object Circe extends Generator {
   private def genObj(obj: Obj, opt: Options)(implicit glopt: GlobalOptions): List[String] = {
     import obj._
 
-    val decoderBody = s"Decoder.const($name)"
-    val encoderBody = "Encoder.encodeUnit.contramap(_ => ())"
+    if (opt.objectCodecs) {
+      val decoderBody = s"Decoder.const($name)"
+      val encoderBody = "Encoder.encodeUnit.contramap(_ => ())"
 
-    val (decoderDecl, encoderDecl) = mkDef(obj)
+      val (decoderDecl, encoderDecl) = mkDef(obj)
 
-    val decoder = s"$decoderDecl =\n  $decoderBody"
-    val encoder = s"$encoderDecl =\n  $encoderBody"
+      val decoder = s"$decoderDecl =\n  $decoderBody"
+      val encoder = s"$encoderDecl =\n  $encoderBody"
 
-    decoder :: encoder :: Nil
+      decoder :: encoder :: Nil
+    } else
+      Nil
   }
 
   // ===================================================================================================================
@@ -127,23 +132,35 @@ object Circe extends Generator {
     if (children.isEmpty)
       return Nil
 
-    def keyFor(t: TypeDef.Concrete) = maxNameLen.pad2("\"" + t.name.withHeadLower + "\"")
+    def keyFor(t: TypeDef.Concrete) =
+      maxTailSuffixLen.pad2("\"" + t.tailSuffix.withHeadLower + "\"")
+
+    val maxEncCase =
+      MaxLen.derive(children.map {
+        case c: Cls => "a: " + c.typeNamePoly
+        case o: Obj => if (opt.objectCodecs) "a@ " + o.name else o.name
+      })
 
     val (decoderBody, encoderBody) =
       opt.sumTypes match {
 
         case SumTypeFormat.TypeToValue =>
           def decCase(t: TypeDef.Concrete) = t match {
-            case c: Cls => s"  case (${keyFor(c)}, c) => c.as[${c.typeNamePoly}]"
-            case o: Obj => s"  case (${keyFor(o)}, _) => Right(${o.name})"
+            case o: Obj if !opt.objectCodecs => s"  case (${keyFor(o)}, _) => Right(${o.name})"
+            case c                           => s"  case (${keyFor(c)}, c) => c.as[${c.typeNamePoly}]"
           }
           val d =
             s"""| decodeSumBySoleKey {
                 |${children.map(decCase).mkString("\n")}
                 |}""".stripMargin
           def encCase(t: TypeDef.Concrete) = t match {
-            case c: Cls => s"  case a: ${maxCaseTypeLen.pad(c.typeNamePoly)} => Json.obj(${keyFor(c)} -> a.asJson)"
-            case o: Obj => s"  case a@ ${maxCaseTypeLen.pad(o.name)        } => Json.obj(${keyFor(o)} -> a.asJson)"
+            case c: Cls =>
+              s"  case ${maxEncCase.pad("a: " + c.typeNamePoly)} => Json.obj(${keyFor(c)} -> a.asJson)"
+            case o: Obj =>
+              if (opt.objectCodecs)
+                s"  case ${maxEncCase.pad("a@ " + o.name)} => Json.obj(${keyFor(o)} -> a.asJson)"
+              else
+                s"  case ${maxEncCase.pad(o.name)} => Json.obj(${keyFor(o)} -> ().asJson)"
           }
           val e =
             s"""| Encoder.instance {
@@ -155,8 +172,13 @@ object Circe extends Generator {
           def decCase(t: TypeDef.Concrete) = s"\n  Decoder[${maxTypeNameLen.pad(t.typeName)}].widen[$name]"
           val d = children.map(decCase).mkString(" or")
           def encCase(t: TypeDef.Concrete) = t match {
-            case c: Cls => s"  case a: ${maxCaseTypeLen.pad(c.typeNamePoly)} => a.asJson"
-            case o: Obj => s"  case a@ ${maxCaseTypeLen.pad(o.name)        } => a.asJson"
+            case c: Cls =>
+              s"  case ${maxEncCase.pad("a: " + c.typeNamePoly)} => a.asJson"
+            case o: Obj =>
+              if (opt.objectCodecs)
+                s"  case ${maxEncCase.pad("a@ " + o.name)} => a.asJson"
+              else
+                s"  case ${maxEncCase.pad(o.name)} => ().asJson"
           }
           val e =
             s"""| Encoder.instance {
