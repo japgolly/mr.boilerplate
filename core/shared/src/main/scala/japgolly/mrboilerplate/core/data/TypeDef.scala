@@ -117,6 +117,7 @@ final case class SealedBase(name            : String,
             case c: Cls        => c :: Nil
             case o: Obj        => o :: Nil
           }
+          .toSet
       ).sortBy(_.name).to(List)
 
 

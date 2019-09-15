@@ -38,7 +38,7 @@ object GeneratorDef {
     override def renderOptions(s: StateSnapshot[BooPickle.Options]) =
       <.div(
         checkbox(s)(BooPickle.Options.conciseSingleFields, "Concise single-field codecs"),
-        checkbox(s)(BooPickle.Options.objectCodecs       , "Generate object codecs"),
+        checkbox(s)(BooPickle.Options.objectCodecs       , "Generate codecs for Scala objects"),
         checkbox(s)(BooPickle.Options.keyConstants       , "Constants for sum-type tags"),
       )
   }
@@ -54,6 +54,7 @@ object GeneratorDef {
       <.div(
         checkbox(s)(Circe.Options.keyConstants    , "Constants for object keys"),
         checkbox(s)(Circe.Options.singlesAsObjects, "Encode single-field as single-key objects"),
+        checkbox(s)(Circe.Options.objectCodecs    , "Generate codecs for Scala objects"),
         checkbox(s)(Circe.Options.monadicObjects  , "Monadic object codecs"),
         select(s)(Circe.Options.sumTypes          , "Sum-type format", Circe.Options.SumTypeFormat.values) {
           case Circe.Options.SumTypeFormat.TypeToValue   => """{"<type>":"<value>"}"""
