@@ -18,17 +18,17 @@ object Build {
 
   object Ver {
     val BetterMonadicFor = "0.3.1"
-    val Circe            = "0.12.1"
-    val FastParse        = "2.1.3"
+    val Circe            = "0.12.3"
+    val FastParse        = "2.2.2"
     val MacroParadise    = "2.1.1"
-    val Microlibs        = "2.0-RC1"
+    val Microlibs        = "2.0"
     val Monocle          = "2.0.0"
     val MTest            = "0.7.1"
-    val Scala212         = "2.12.9"
-    val Scala213         = "2.13.0"
-    val ScalaCollCompat  = "2.1.2"
-    val SJSReact         = "1.5.0-RC2"
-    val UnivEq           = "1.1.0-RC3"
+    val Scala212         = "2.12.10"
+    val Scala213         = "2.13.1"
+    val ScalaCollCompat  = "2.1.3"
+    val SJSReact         = "1.5.0"
+    val UnivEq           = "1.1.0"
   }
 
   def byScalaVersion[A](f: PartialFunction[(Long, Long), Seq[A]]): Def.Initialize[Seq[A]] =
@@ -72,7 +72,6 @@ object Build {
       scalacOptions in Test        --= Seq("-Ywarn-dead-code"),
       shellPrompt in ThisBuild      := ((s: State) => Project.extract(s).currentRef.project + "> "),
       testFrameworks                := Seq(new TestFramework("utest.runner.Framework")),
-      triggeredMessage              := Watched.clearWhenTriggered,
       incOptions                    := incOptions.value,
       updateOptions                 := updateOptions.value.withCachedResolution(true),
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
