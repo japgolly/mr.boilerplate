@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - java: 14
+          - java: 8
+    name: Java v${{ matrix.java }}
+    steps:
+
+      - name: Git checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Scala
+        uses: japgolly/setup-everything-scala@v3.1
+        with:
+          java-version: adopt@1.${{ matrix.java }}
+
+      - name: Build and test
+        shell: bash
+        run: sbt clean test
