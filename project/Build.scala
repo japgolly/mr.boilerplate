@@ -20,13 +20,10 @@ object Build {
     val BetterMonadicFor = "0.3.1"
     val Circe            = "0.12.3"
     val FastParse        = "2.2.2"
-    val MacroParadise    = "2.1.1"
     val Microlibs        = "2.0"
     val Monocle          = "2.0.0"
     val MTest            = "0.7.1"
-    val Scala212         = "2.12.10"
-    val Scala213         = "2.13.1"
-    val ScalaCollCompat  = "2.1.3"
+    val Scala2           = "2.13.1"
     val SJSReact         = "1.5.0"
     val UnivEq           = "1.1.0"
   }
@@ -36,12 +33,7 @@ object Build {
 
   def addMacroParadisePlugin = Def.settings(
     Seq(
-      libraryDependencies ++= byScalaVersion {
-        case (2, 12) => Seq(compilerPlugin("org.scalamacros" % "paradise" % Ver.MacroParadise cross CrossVersion.patch))
-        case (2, 13) => Nil
-      }.value,
       scalacOptions ++= byScalaVersion {
-        case (2, 12) => Nil
         case (2, 13) => Seq("-Ymacro-annotations")
       }.value
     ))
@@ -66,8 +58,7 @@ object Build {
       homepage                      := Some(url("https://github.com/japgolly/" + ghProject)),
       licenses                      += ("Apache-2.0", url("http://opensource.org/licenses/Apache-2.0")),
       startYear                     := Some(2019),
-      scalaVersion                  := Ver.Scala213,
-      crossScalaVersions            := Seq(Ver.Scala212, Ver.Scala213),
+      scalaVersion                  := Ver.Scala2,
       scalacOptions                ++= scalacFlags,
       scalacOptions in Test        --= Seq("-Ywarn-dead-code"),
       shellPrompt in ThisBuild      := ((s: State) => Project.extract(s).currentRef.project + "> "),
@@ -106,7 +97,8 @@ object Build {
         "com.github.japgolly.univeq"    %%% "univeq"                  % Ver.UnivEq,
         "com.github.julien-truffaut"    %%% "monocle-core"            % Ver.Monocle,
         "com.github.julien-truffaut"    %%% "monocle-macro"           % Ver.Monocle,
-        "org.scala-lang.modules"        %%% "scala-collection-compat" % Ver.ScalaCollCompat))
+      ),
+    )
 
   lazy val webapp = project
     .in(file("webapp"))
