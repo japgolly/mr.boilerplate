@@ -60,13 +60,12 @@ object Build {
       startYear                     := Some(2019),
       scalaVersion                  := Ver.Scala2,
       scalacOptions                ++= scalacFlags,
-      scalacOptions in Test        --= Seq("-Ywarn-dead-code"),
-      shellPrompt in ThisBuild      := ((s: State) => Project.extract(s).currentRef.project + "> "),
+      Test / scalacOptions         --= Seq("-Ywarn-dead-code"),
       testFrameworks                := Seq(new TestFramework("utest.runner.Framework")),
       incOptions                    := incOptions.value,
       updateOptions                 := updateOptions.value.withCachedResolution(true),
       releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-      releaseTagComment             := s"v${(version in ThisBuild).value}",
+      releaseTagComment             := s"v${(ThisBuild / version).value}",
       releaseVcsSign                := true,
       libraryDependencies ++= Seq(
         "com.lihaoyi"                   %%% "utest"     % Ver.MTest,
@@ -113,6 +112,6 @@ object Build {
         "io.circe"                          %%% "circe-core"       % Ver.Circe,
         "io.circe"                          %%% "circe-parser"     % Ver.Circe),
       emitSourceMaps := true,
-      artifactPath in (Compile, fastOptJS) := (crossTarget.value / "mr-boilerplate.js"),
-      artifactPath in (Compile, fullOptJS) := (crossTarget.value / "mr-boilerplate.js"))
+      Compile / fastOptJS / artifactPath := (crossTarget.value / "mr-boilerplate.js"),
+      Compile / fullOptJS / artifactPath := (crossTarget.value / "mr-boilerplate.js"))
 }
