@@ -64,7 +64,7 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit val jsonCodecFieldName: JsonCodec[FieldName] = {
-        |  val enc = Encoder.forProduct1("value")(_.value)
+        |  val enc = Encoder.forProduct1("value")((_: FieldName).value)
         |  val dec = Decoder.forProduct1("value")(FieldName.apply)
         |  JsonCodec(enc, dec)
         |}
@@ -75,7 +75,7 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit val jsonCodecClass: JsonCodec[Class] = {
-        |  val enc = Encoder.forProduct2("typeParams", "fields")(a => (a.typeParams, a.fields))
+        |  val enc = Encoder.forProduct2("typeParams", "fields")((a: Class) => (a.typeParams, a.fields))
         |  val dec = Decoder.forProduct2("typeParams", "fields")(Class.apply)
         |  JsonCodec(enc, dec)
         |}
@@ -87,7 +87,7 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit def jsonCodec[A: Decoder: Encoder]: JsonCodec[NonEmptyList[A]] = {
-        |  val enc = Encoder.forProduct2("head", "tail")(a => (a.head, a.tail))
+        |  val enc = Encoder.forProduct2("head", "tail")((a: NonEmptyList[A]) => (a.head, a.tail))
         |  val dec = Decoder.forProduct2("head", "tail")(NonEmptyList.apply[A])
         |  JsonCodec(enc, dec)
         |}
@@ -98,7 +98,7 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit def jsonCodecPoly[F[_, _[_]], A](implicit d1: Decoder[F[A]], e1: Encoder[F[A]]): JsonCodec[Poly[F, A]] = {
-        |  val enc = Encoder.forProduct1("fa")(_.fa)
+        |  val enc = Encoder.forProduct1("fa")((_: Poly[F, A]).fa)
         |  val dec = Decoder.forProduct1("fa")(Poly.apply[F, A])
         |  JsonCodec(enc, dec)
         |}
@@ -110,7 +110,7 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit def jsonCodec[F[_], A: Decoder: Encoder, B: Decoder: Encoder](implicit d1: Decoder[F[A]], e1: Encoder[F[A]]): JsonCodec[PolyK2[F, A, B]] = {
-        |  val enc = Encoder.forProduct3("fa", "a", "b")(a => (a.fa, a.a, a.b))
+        |  val enc = Encoder.forProduct3("fa", "a", "b")((a: PolyK2[F, A, B]) => (a.fa, a.a, a.b))
         |  val dec = Decoder.forProduct3("fa", "a", "b")(PolyK2.apply[F, A, B])
         |  JsonCodec(enc, dec)
         |}
@@ -122,7 +122,7 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit val jsonCodec: JsonCodec[FieldName] = {
-        |  val enc = Encoder.forProduct1("value")(_.value)
+        |  val enc = Encoder.forProduct1("value")((_: FieldName).value)
         |  val dec = Decoder.forProduct1("value")(FieldName.apply)
         |  JsonCodec(enc, dec)
         |}
@@ -142,11 +142,11 @@ object JsonCodecTest extends TestSuite {
       JsonCodecOptions.copy(monadicObjects = true)
     )(
       """implicit val jsonCodecX: JsonCodec[X] = {
-        |  val enc = Encoder.instance(value => Json.obj(
+        |  val enc = Encoder.instance[X](value => Json.obj(
         |    "a"   -> value.a.asJson,
         |    "bee" -> value.bee.asJson,
         |  ))
-        |  val dec = Decoder.instance { c =>
+        |  val dec = Decoder.instance[X] { c =>
         |    for {
         |      a   <- c.get[A]("a")
         |      bee <- c.get[B]("bee")
@@ -167,7 +167,7 @@ object JsonCodecTest extends TestSuite {
         |""".stripMargin,
       """
         |implicit val jsonCodecClass: JsonCodec[Class] = {
-        |  val enc = Encoder.forProduct2(JsonCodecKeyClassTypeParams, JsonCodecKeyClassFields)(a => (a.typeParams, a.fields))
+        |  val enc = Encoder.forProduct2(JsonCodecKeyClassTypeParams, JsonCodecKeyClassFields)((a: Class) => (a.typeParams, a.fields))
         |  val dec = Decoder.forProduct2(JsonCodecKeyClassTypeParams, JsonCodecKeyClassFields)(Class.apply)
         |  JsonCodec(enc, dec)
         |}
@@ -184,11 +184,11 @@ object JsonCodecTest extends TestSuite {
         |""".stripMargin,
       """
         |implicit val jsonCodec: JsonCodec[X] = {
-        |  val enc = Encoder.instance(value => Json.obj(
+        |  val enc = Encoder.instance[X](value => Json.obj(
         |    JsonCodecKeyA   -> value.a.asJson,
         |    JsonCodecKeyBee -> value.bee.asJson,
         |  ))
-        |  val dec = Decoder.instance { c =>
+        |  val dec = Decoder.instance[X] { c =>
         |    for {
         |      a   <- c.get[A](JsonCodecKeyA)
         |      bee <- c.get[B](JsonCodecKeyBee)
@@ -208,12 +208,12 @@ object JsonCodecTest extends TestSuite {
       )(
       """
         |implicit val jsonCodec: JsonCodec[Base] = {
-        |  val enc = Encoder.instance {
+        |  val enc = Encoder.instance[Base] {
         |    case a: A   => Json.obj("a"   -> a.asJson)
         |    case a: Bee => Json.obj("bee" -> a.asJson)
         |    case a@ O   => Json.obj("o"   -> a.asJson)
         |  }
-        |  val dec = decodeSumBySoleKey {
+        |  val dec = decodeSumBySoleKey[Base] {
         |    case ("a"  , c) => c.as[A]
         |    case ("bee", c) => c.as[Bee]
         |    case ("o"  , c) => c.as[O.type]
@@ -233,12 +233,12 @@ object JsonCodecTest extends TestSuite {
         glopt = globalOptions.copy(shortInstanceNames = true)
       )(
       """implicit val jsonCodec: JsonCodec[Base] = {
-        |  val enc = Encoder.instance {
+        |  val enc = Encoder.instance[Base] {
         |    case a: A   => Json.obj("a"   -> a.asJson)
         |    case a: Bee => Json.obj("bee" -> a.asJson)
         |    case O      => Json.obj("o"   -> ().asJson)
         |  }
-        |  val dec = decodeSumBySoleKey {
+        |  val dec = decodeSumBySoleKey[Base] {
         |    case ("a"  , c) => c.as[A]
         |    case ("bee", c) => c.as[Bee]
         |    case ("o"  , _) => Right(O)
@@ -258,11 +258,11 @@ object JsonCodecTest extends TestSuite {
       )(
       """
         |implicit val jsonCodec: JsonCodec[Base] = {
-        |  val enc = Encoder.instance {
+        |  val enc = Encoder.instance[Base] {
         |    case Bee => Json.obj("bee" -> ().asJson)
         |    case O   => Json.obj("o"   -> ().asJson)
         |  }
-        |  val dec = decodeSumBySoleKey {
+        |  val dec = decodeSumBySoleKey[Base] {
         |    case ("bee", _) => Right(Bee)
         |    case ("o"  , _) => Right(O)
         |  }
@@ -282,7 +282,7 @@ object JsonCodecTest extends TestSuite {
       )(
       """
         |implicit val jsonCodec: JsonCodec[Base] = {
-        |  val enc = Encoder.instance {
+        |  val enc = Encoder.instance[Base] {
         |    case a: A   => a.asJson
         |    case a: Bee => a.asJson
         |    case a@ O   => a.asJson
@@ -311,12 +311,12 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit def jsonCodec[X, Y](implicit d1: Decoder[A[X]], d2: Decoder[Bee[Y, X]], e1: Encoder[A[X]], e2: Encoder[Bee[Y, X]]): JsonCodec[Base[X, Y]] = {
-        |  val enc = Encoder.instance {
+        |  val enc = Encoder.instance[Base[X, Y]] {
         |    case a: A[X]      => Json.obj("a"   -> a.asJson)
         |    case a: Bee[Y, X] => Json.obj("bee" -> a.asJson)
         |    case a@ O         => Json.obj("o"   -> a.asJson)
         |  }
-        |  val dec = decodeSumBySoleKey {
+        |  val dec = decodeSumBySoleKey[Base[X, Y]] {
         |    case ("a"  , c) => c.as[A[X]]
         |    case ("bee", c) => c.as[Bee[Y, X]]
         |    case ("o"  , c) => c.as[O.type]
@@ -335,11 +335,11 @@ object JsonCodecTest extends TestSuite {
     )(
       """
         |implicit def jsonCodec[X, Y](implicit d1: Decoder[Qqq.Bee[Y, X]], e1: Encoder[Qqq.Bee[Y, X]]): JsonCodec[Qqq.Base[X, Y]] = {
-        |  val enc = Encoder.instance {
+        |  val enc = Encoder.instance[Qqq.Base[X, Y]] {
         |    case a: Qqq.Bee[Y, X] => Json.obj("bee" -> a.asJson)
         |    case a@ Qqq.O         => Json.obj("o"   -> a.asJson)
         |  }
-        |  val dec = decodeSumBySoleKey {
+        |  val dec = decodeSumBySoleKey[Qqq.Base[X, Y]] {
         |    case ("bee", c) => c.as[Qqq.Bee[Y, X]]
         |    case ("o"  , c) => c.as[Qqq.O.type]
         |  }

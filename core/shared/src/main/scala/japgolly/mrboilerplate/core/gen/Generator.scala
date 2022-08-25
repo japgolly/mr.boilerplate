@@ -54,7 +54,7 @@ object Generator {
           .iterator()
           .mkString("\n")
 
-      (Iterator.single(sortedImports) ++ other).mkString("\n\n")
+      (Iterator.single(sortedImports) ++ other.filter(_.trim.nonEmpty)).mkString("\n\n")
     }
 
     val body: String =

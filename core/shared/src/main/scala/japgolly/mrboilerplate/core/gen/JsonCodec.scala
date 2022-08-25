@@ -87,7 +87,7 @@ object JsonCodec extends Generator {
           val gets = fields.map(f => s"      ${f.name.pad} <- c.get[${f.typ}](${quoteOrKey(f.name)})")
           val d =
             s"""
-               |Decoder.instance { c =>
+               |Decoder.instance[${cls.typeNamePoly}] { c =>
                |    for {
                |${gets.mkString("\n")}
                |    } yield $name($fieldNames)
@@ -96,7 +96,7 @@ object JsonCodec extends Generator {
           val sets = fields.map(f => s"    ${quoteOrKeyPad(f.name)} -> value.${f.name}.asJson,")
           val e =
             s"""
-               |Encoder.instance(value => Json.obj(
+               |Encoder.instance[${cls.typeNamePoly}](value => Json.obj(
                |${sets.mkString("\n")}
                |  ))
                |""".stripMargin.trim
@@ -108,7 +108,7 @@ object JsonCodec extends Generator {
               fields.map(f => mkKey(f.name.value)).mkString(", ")
             else
               fieldNameStrs
-          val e = s"Encoder.forProduct${fields.size}($fieldNameStrsOrKeys)($unapply)"
+          val e = s"Encoder.forProduct${fields.size}($fieldNameStrsOrKeys)($unapplyTyped)"
           val d = s"Decoder.forProduct${fields.size}($fieldNameStrsOrKeys)($apply)"
           constructBody(e, d)
       }
@@ -151,7 +151,7 @@ object JsonCodec extends Generator {
             case c                           => s"    case (${keyFor(c)}, c) => c.as[${c.typeNamePoly}]"
           }
           val d =
-            s"""|decodeSumBySoleKey {
+            s"""|decodeSumBySoleKey[${sb.typeNamePoly}] {
                 |${children.map(decCase).mkString("\n")}
                 |  }""".stripMargin
           def encCase(t: TypeDef.Concrete) = t match {
@@ -164,7 +164,7 @@ object JsonCodec extends Generator {
                 s"    case ${maxEncCase.pad(o.name)} => Json.obj(${keyFor(o)} -> ().asJson)"
           }
           val e =
-            s"""|Encoder.instance {
+            s"""|Encoder.instance[${sb.typeNamePoly}] {
                 |${children.map(encCase).mkString("\n")}
                 |  }""".stripMargin
           constructBody(e, d)
@@ -182,7 +182,7 @@ object JsonCodec extends Generator {
                 s"    case ${maxEncCase.pad(o.name)} => ().asJson"
           }
           val e =
-            s"""|Encoder.instance {
+            s"""|Encoder.instance[${sb.typeNamePoly}] {
                 |${children.map(encCase).mkString("\n")}
                 |  }""".stripMargin
           constructBody(e, d)
