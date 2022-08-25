@@ -49,7 +49,7 @@ object Generator {
           .partition(_.startsWith("import "))
 
       val sortedImports =
-        MutableArray(imports.flatMap(_.split("\n")).map(_.trim).filter(_.nonEmpty))
+        MutableArray(imports.flatMap(_.split("\n")).map(_.trim).filter(_.nonEmpty).toSet)
           .sort
           .iterator()
           .mkString("\n")
