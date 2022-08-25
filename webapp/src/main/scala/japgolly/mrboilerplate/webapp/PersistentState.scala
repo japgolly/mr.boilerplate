@@ -6,7 +6,7 @@ import io.circe.syntax._
 import japgolly.mrboilerplate.core.gen._
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import monocle.Lens
-import org.scalajs.dom.raw.Storage
+import org.scalajs.dom.{Storage, window}
 import scala.scalajs.js
 
 object PersistentState {
@@ -170,7 +170,7 @@ object PersistentState {
   private val storage: CallbackTo[Option[Storage]] =
     CallbackTo(
       Option {
-        js.UndefOr.any2undefOrA(org.scalajs.dom.window.localStorage).orNull
+        js.defined(window.localStorage).orNull
       }
     )
 

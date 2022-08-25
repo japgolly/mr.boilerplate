@@ -42,6 +42,14 @@ object Default {
         keyConstants = false,
       ),
 
+      JsonCodec.Options(
+        objectCodecs = false,
+        singlesAsObjects = true,
+        monadicObjects = false,
+        keyConstants = false,
+        sumTypes = JsonCodec.Options.SumTypeFormat.UntaggedUnion,
+      ),
+
     ))
 
   def globalOptions = GlobalOptions(

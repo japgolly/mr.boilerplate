@@ -1,7 +1,5 @@
 package japgolly.mrboilerplate.core
 
-import scala.collection.compat._
-
 final case class MaxLen(value: Int) {
   private val fmt = s"%-${value}s"
   private val fmt2 = s"%-${value+2}s"

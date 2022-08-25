@@ -8,10 +8,9 @@ import japgolly.mrboilerplate.webapp.DataReusability._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.MonocleReact._
+import japgolly.scalajs.react.ReactMonocle._
 import monocle.macros.Lenses
 import scala.collection.immutable.ListSet
-import scala.collection.compat._
 
 object MainComponent {
 
@@ -91,7 +90,7 @@ object MainComponent {
       } yield ()
   }
 
-  val Component = ScalaComponent.builder[Props]("MainComponent")
+  val Component = ScalaComponent.builder[Props]
     .initialStateCallback(State.rememberOrInit)
     .renderBackend[Backend]
     .componentDidUpdate(_.backend.storeState)

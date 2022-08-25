@@ -51,7 +51,7 @@ object Generator {
       val sortedImports =
         MutableArray(imports.flatMap(_.split("\n")).map(_.trim).filter(_.nonEmpty))
           .sort
-          .iterator
+          .iterator()
           .mkString("\n")
 
       (Iterator.single(sortedImports) ++ other).mkString("\n\n")
@@ -65,7 +65,7 @@ object Generator {
           if (decls.nonEmpty)
             s"""
                |object ${td.name} {
-               |${decls.indent(2)}
+               |${decls.indentLines(2)}
                |}
                  """.stripMargin.trim :: Nil
           else

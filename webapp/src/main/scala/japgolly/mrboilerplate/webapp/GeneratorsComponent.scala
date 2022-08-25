@@ -5,7 +5,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.mrboilerplate.core.gen._
 import japgolly.mrboilerplate.webapp.DataReusability._
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.MonocleReact._
+import japgolly.scalajs.react.ReactMonocle._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.Lens
@@ -28,7 +28,7 @@ object GeneratorsComponent {
     val enabledWithOptions: List[Generator.AndOptions] =
       MutableArray(enabled)
         .sortBy(_.title)
-        .iterator
+        .iterator()
         .map(g => g.gen.andOptions(optionsFor(g)))
         .toList
 
@@ -109,7 +109,7 @@ object GeneratorsComponent {
         renderGlobalOptions(p.state))
   }
 
-  val Component = ScalaComponent.builder[Props]("GeneratorsComponent")
+  val Component = ScalaComponent.builder[Props]
     .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
     .build

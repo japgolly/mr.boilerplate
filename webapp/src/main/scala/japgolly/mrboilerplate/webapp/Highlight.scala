@@ -20,7 +20,7 @@ object Highlight {
         ^.dangerouslySetInnerHtml := html))
   }
 
-  val Component = ScalaComponent.builder[String]("Highlight")
+  val Component = ScalaComponent.builder[String]
     .render_P(render)
     .configure(Reusability.shouldComponentUpdate)
     .build
