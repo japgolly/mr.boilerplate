@@ -162,13 +162,11 @@ object JsonCodecTest extends TestSuite {
       globalOptions.copy(shortInstanceNames = false)
     )(
       """
-        |private final val JsonCodecKeyClassTypeParams = "typeParams"
-        |private final val JsonCodecKeyClassFields     = "fields"
-        |""".stripMargin,
-      """
         |implicit val jsonCodecClass: JsonCodec[Class] = {
-        |  val enc = Encoder.forProduct2(JsonCodecKeyClassTypeParams, JsonCodecKeyClassFields)((a: Class) => (a.typeParams, a.fields))
-        |  val dec = Decoder.forProduct2(JsonCodecKeyClassTypeParams, JsonCodecKeyClassFields)(Class.apply)
+        |  final val KeyTypeParams = "typeParams"
+        |  final val KeyFields     = "fields"
+        |  val enc = Encoder.forProduct2(KeyTypeParams, KeyFields)((a: Class) => (a.typeParams, a.fields))
+        |  val dec = Decoder.forProduct2(KeyTypeParams, KeyFields)(Class.apply)
         |  JsonCodec(enc, dec)
         |}
         |""".stripMargin)
@@ -179,19 +177,17 @@ object JsonCodecTest extends TestSuite {
       globalOptions.copy(shortInstanceNames = true)
     )(
       """
-        |private final val JsonCodecKeyA   = "a"
-        |private final val JsonCodecKeyBee = "bee"
-        |""".stripMargin,
-      """
         |implicit val jsonCodec: JsonCodec[X] = {
+        |  final val KeyA   = "a"
+        |  final val KeyBee = "bee"
         |  val enc = Encoder.instance[X](value => Json.obj(
-        |    JsonCodecKeyA   -> value.a.asJson,
-        |    JsonCodecKeyBee -> value.bee.asJson,
+        |    KeyA   -> value.a.asJson,
+        |    KeyBee -> value.bee.asJson,
         |  ))
         |  val dec = Decoder.instance[X] { c =>
         |    for {
-        |      a   <- c.get[A](JsonCodecKeyA)
-        |      bee <- c.get[B](JsonCodecKeyBee)
+        |      a   <- c.get[A](KeyA)
+        |      bee <- c.get[B](KeyBee)
         |    } yield X(a, bee)
         |  }
         |  JsonCodec(enc, dec)

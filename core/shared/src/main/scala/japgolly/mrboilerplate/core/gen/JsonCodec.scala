@@ -5,6 +5,7 @@ import japgolly.mrboilerplate.core.MaxLen
 import japgolly.mrboilerplate.core.data._
 import japgolly.mrboilerplate.core.StringUtils._
 import monocle.macros.Lenses
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 
 object JsonCodec extends Generator {
@@ -36,16 +37,19 @@ object JsonCodec extends Generator {
     case s: SealedBase => genSB(s, opt)
   }
 
-  private def constructBody(enc: String, dec: String): String = {
+  private def constructBody(enc: String, dec: String, prefix: String = ""): String = {
     def mkVal(name: String, body: String) =
       if (body.startsWith("\n"))
         s"val $name =$body"
       else
         s"val $name = $body"
 
-    List(mkVal("enc", enc), mkVal("dec", dec), s"JsonCodec(enc, dec)")
-      .map("  " + _)
-      .mkString(" {\n", "\n", "\n}")
+    var stmts = List(mkVal("enc", enc), mkVal("dec", dec), s"JsonCodec(enc, dec)").map("  " + _)
+
+    if (prefix.trim.nonEmpty)
+      stmts ::= prefix.indentLines("  ")
+
+    stmts.mkString(" {\n", "\n", "\n}")
   }
 
   // ===================================================================================================================
@@ -67,7 +71,13 @@ object JsonCodec extends Generator {
     import cls._
 
     def mkKey(f: String) =
-      "JsonCodecKey" + instanceNameSuffix + f.withHeadUpper
+      "Key" + f.withHeadUpper
+
+    def mkKeys =
+      if (opt.keyConstants)
+        fields.iterator.map(f => s"final val ${mkKey(f.name.pad)} = ${f.name.quote}").mkString("\n")
+      else
+        ""
 
     def quoteOrKey(f: FieldName) =
       if (opt.keyConstants) mkKey(f.value) else f.quote
@@ -100,7 +110,7 @@ object JsonCodec extends Generator {
                |${sets.mkString("\n")}
                |  ))
                |""".stripMargin.trim
-          constructBody(e, d)
+          constructBody(e, d, mkKeys)
 
         case _ =>
           val fieldNameStrsOrKeys =
@@ -110,18 +120,12 @@ object JsonCodec extends Generator {
               fieldNameStrs
           val e = s"Encoder.forProduct${fields.size}($fieldNameStrsOrKeys)($unapplyTyped)"
           val d = s"Decoder.forProduct${fields.size}($fieldNameStrsOrKeys)($apply)"
-          constructBody(e, d)
+          constructBody(e, d, mkKeys)
       }
 
     val decl = mkDef(cls)
 
-    val codec = s"$decl =$body"
-
-    if (opt.keyConstants) {
-      val keys = fields.iterator.map(f => s"private final val ${mkKey(f.name.pad)} = ${f.name.quote}").mkString("\n")
-      keys :: codec :: Nil
-    } else
-      codec :: Nil
+    s"$decl =$body" :: Nil
   }
 
   // ===================================================================================================================
