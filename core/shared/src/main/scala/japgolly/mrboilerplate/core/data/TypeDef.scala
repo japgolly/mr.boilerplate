@@ -54,7 +54,7 @@ sealed trait TypeDef {
     else
       typeParams.map(_.withoutWildcards).mkString("[", ", ", "]")
 
-  def typeParamDefsAndEvTC(tc: String): String
+  def typeParamDefsAndEvTC(tcs: String*): String
 
   final def typeNamePoly: String =
     typeName + typeParamAp
@@ -89,18 +89,20 @@ final case class SealedBase(name            : String,
       name = f(name),
       directChildren = directChildren.map(_.mapName(f)))
 
-  override def typeParamDefsAndEvTC(tc: String) =
-    typeParamDefs + implicitPolyCaseEvDecl(tc)
+  override def typeParamDefsAndEvTC(tcs: String*) =
+    typeParamDefs + implicitPolyCaseEvDecl(tcs: _*)
 
   /** `(implicit t1: TC[Case1[A]])` */
-  def implicitPolyCaseEvDecl(tc: String): String = {
-    val prefix = tc.head.toLower
+  def implicitPolyCaseEvDecl(tcs: String*): String = {
     val implicits =
-      concreteTransitiveChildren.children.iterator.flatMap {
-        case c: Cls => Option.when(c.typeParams.nonEmpty)(c.typeNamePoly)
-        case _: Obj => None
-      }.to(SortedSet).iterator.zipWithIndex.map {
-        case ((typ, num)) => s"$prefix${num + 1}: $tc[$typ]"
+      tcs.flatMap { tc =>
+        val prefix = tc.head.toLower
+        concreteTransitiveChildren.children.iterator.flatMap {
+          case c: Cls => Option.when(c.typeParams.nonEmpty)(c.typeNamePoly)
+          case _: Obj => None
+        }.to(SortedSet).iterator.zipWithIndex.map {
+          case ((typ, num)) => s"$prefix${num + 1}: $tc[$typ]"
+        }
       }
     if (implicits.isEmpty) "" else implicits.mkString("(implicit ", ", ", ")")
   }
@@ -200,11 +202,11 @@ final case class Cls(name      : String,
 //  }
 
   /** `[F[_], A: TC1: TC2, B: TC1: TC2]` */
-  def typeParamDefsWithTC(tc1: String, tcN: String*): String =
+  def typeParamDefsWithTC(tcs: String*): String =
     if (typeParams.isEmpty)
       ""
     else {
-      val constraints = (tc1 +: tcN).map(": " + _).mkString
+      val constraints = tcs.map(": " + _).mkString
       def needTC(t: Type): Boolean = !t.isHK && typeUsedInMonoField(t)
       typeParams
         .iterator
@@ -223,15 +225,15 @@ final case class Cls(name      : String,
   }
 
   /** `(implicit ev1: TC[F[A]])` */
-  def implicitHkEvDecl(tc: String): String =
-    implicitHkEv(tc) match {
+  def implicitHkEvDecl(tcs: String*): String =
+    tcs.flatMap(implicitHkEv) match {
       case Nil => ""
       case evs => evs.mkString("(implicit ", ", ", ")")
     }
 
   /** `[F[_], A, B: TC](implicit ev1: TC[F[A]])` */
-  def typeParamDefsAndEvTC(tc: String): String =
-    typeParamDefsWithTC(tc) + implicitHkEvDecl(tc)
+  def typeParamDefsAndEvTC(tcs: String*): String =
+    typeParamDefsWithTC(tcs: _*) + implicitHkEvDecl(tcs: _*)
 
   val fieldNames: String =
     fields.map(_.name).mkString(", ")
@@ -263,7 +265,7 @@ final case class Obj(name      : String,
   override val typeParams =
     Nil
 
-  override def typeParamDefsAndEvTC(tc: String) =
+  override def typeParamDefsAndEvTC(tcs: String*) =
     typeParamDefs
 }
 

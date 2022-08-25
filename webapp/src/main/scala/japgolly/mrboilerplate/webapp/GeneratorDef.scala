@@ -17,7 +17,7 @@ sealed trait GeneratorDef {
 
   final def title = gen.title
 
-  val foldOptions: ((Circe.Options, UnivEqGen.Options, BooPickle.Options)) => gen.Options
+  val foldOptions: ((Circe.Options, UnivEqGen.Options, BooPickle.Options, JsonCodec.Options)) => gen.Options
 }
 
 object GeneratorDef {
@@ -59,6 +59,26 @@ object GeneratorDef {
         select(s)(Circe.Options.sumTypes          , "Sum-type format", Circe.Options.SumTypeFormat.values) {
           case Circe.Options.SumTypeFormat.TypeToValue   => """{"<type>":"<value>"}"""
           case Circe.Options.SumTypeFormat.UntaggedUnion => """<value₁> | <value₂> | …"""
+        },
+      )
+  }
+
+  case object JsonCodecDef extends GeneratorDef {
+    override val gen = JsonCodec
+
+    override val enabledByDefault = false
+
+    override val foldOptions = _._4
+
+    override def renderOptions(s: StateSnapshot[JsonCodec.Options]) =
+      <.div(
+        checkbox(s)(JsonCodec.Options.keyConstants    , "Constants for object keys"),
+        checkbox(s)(JsonCodec.Options.singlesAsObjects, "Encode single-field as single-key objects"),
+        checkbox(s)(JsonCodec.Options.objectCodecs    , "Generate codecs for Scala objects"),
+        checkbox(s)(JsonCodec.Options.monadicObjects  , "Monadic object codecs"),
+        select(s)(JsonCodec.Options.sumTypes          , "Sum-type format", JsonCodec.Options.SumTypeFormat.values) {
+          case JsonCodec.Options.SumTypeFormat.TypeToValue   => """{"<type>":"<value>"}"""
+          case JsonCodec.Options.SumTypeFormat.UntaggedUnion => """<value₁> | <value₂> | …"""
         },
       )
   }
