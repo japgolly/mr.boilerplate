@@ -187,6 +187,12 @@ final case class Cls(name      : String,
       case fs       => fs.map("a." + _.name).mkString("a => (", ", ", ")")
     }
 
+  lazy val unapplyTyped =
+    fields match {
+      case f :: Nil => s"(_: $typeNamePoly).${f.name}"
+      case fs       => fs.map("a." + _.name).mkString(s"(a: $typeNamePoly) => (", ", ", ")")
+    }
+
 //  if (name == "PolyK2") {
 //    println("types:")
 //    for (t <- typeParams)
