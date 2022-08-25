@@ -1,6 +1,5 @@
 package japgolly.mrboilerplate.core.data
 
-import scala.collection.compat._
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.Memo
 import japgolly.mrboilerplate.core.MaxLen

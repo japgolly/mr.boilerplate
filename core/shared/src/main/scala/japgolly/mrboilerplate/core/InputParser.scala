@@ -3,7 +3,9 @@ package japgolly.mrboilerplate.core
 import fastparse._
 import japgolly.mrboilerplate.core.data._
 import japgolly.univeq.UnivEq
+import scala.annotation.nowarn
 
+@nowarn("msg=Top-level wildcard is not allowed")
 object InputParser {
 
   private final case class Flags(isSealed: Boolean, isAbstract: Boolean)
@@ -25,17 +27,17 @@ object InputParser {
 
     import fastparse.ScalaWhitespace._
 
-    def TypeArg2[_: P]: P[Type] = {
+    def TypeArg2[_](implicit p: P[Any]): P[Type] = {
       def CtxBounds = P((`<%` ~/ Type).rep ~ (`:` ~/ Type).rep)
       P(((Id | `_`) ~ TypeArgList.?).!.map(s => data.Type(s.trim)) ~ TypeBounds ~ CtxBounds)
     }
 
-    def TypeArgList2[_: P]: P[Seq[Type]] = {
+    def TypeArgList2[_](implicit p: P[Any]): P[Seq[Type]] = {
       def Variant: P[Type] = P( Annot.rep ~ CharIn("+\\-").? ~ TypeArg2 )
       P( "[" ~/ Variant.repTC(1) ~ "]" )
     }
 
-    def TmplBody[_: P]: P[Unit] = {
+    def TmplBody[_](implicit p: P[Any]): P[Unit] = {
       def Prelude = P( (Annot ~ OneNLMax).rep ~ Mod./.rep )
       // def TmplStat = P( Import | (Prelude ~ BlockDef) | StatCtx.Expr )
       def TmplStat = P(Import | Prelude ~ (Dcl | ObjDef) | StatCtx.Expr)
@@ -43,16 +45,18 @@ object InputParser {
       P( "{" ~/ BlockLambda.? ~ Semis.? ~ TmplStat.repX(sep = NoCut(Semis)) ~ Semis.? ~ `}` )
     }
 
-    def ValVarDef[_: P] = P( BindPattern.rep(1, ","./) ~ (`:` ~/ Type).? ~ (`=` ~/ FreeCtx.Expr).? )
+    override def ValVarDef[_](implicit p: P[Any]) =
+      P( BindPattern.rep(1, ","./) ~ (`:` ~/ Type).? ~ (`=` ~/ FreeCtx.Expr).? )
 
-    def FunDef[_: P] = {
+    override def FunDef[_](implicit p: P[Any]) = {
       def Body = P( WL ~ `=` ~/ `macro`.? ~ StatCtx.Expr | OneNLMax ~ "{" ~ Block ~ "}" )
       P( FunSig ~ (`:` ~/ Type).? ~~ Body.? )
     }
 
-    def BlockDef[_: P]: P[Unit] = P( Dcl | TraitDef  | ClsDef | ObjDef )
+    override def BlockDef[_](implicit p: P[Any]): P[Unit] =
+      P( Dcl | TraitDef  | ClsDef | ObjDef )
 
-    def ClsDef[_: P]: P[(String, Option[Seq[Type]], Seq[Seq[(String, String)]], Seq[Type])] = {
+    def ClsDef[_](implicit p: P[Any]): P[(String, Option[Seq[Type]], Seq[Seq[(String, String)]], Seq[Type])] = {
       def ClsAnnot = P( `@` ~ SimpleType ~ ArgList.? )
       def Prelude = P( NotNewline ~ ( ClsAnnot.rep(1) ~ AccessMod.? | AccessMod) )
       def ClsArgMod = P( Mod.rep ~ (`val` | `var`) )
@@ -62,45 +66,45 @@ object InputParser {
       P( `case`.? ~ `class` ~/ Id.! ~ TypeArgList2.? ~~ Prelude.? ~~ ClsArgs.repX ~ DefTmpl_? )
     }
 
-    def Constrs[_: P]: P[Seq[data.Type]] =
+    def Constrs[_](implicit p: P[Any]): P[Seq[data.Type]] =
       P( (WL ~ Constr).rep(1, `with`./) )
 
-    def EarlyDefTmpl[_: P]: P[Seq[data.Type]] =
+    def EarlyDefTmpl[_](implicit p: P[Any]): P[Seq[data.Type]] =
       P( TmplBody ~ (`with` ~/ Constr).rep ~ TmplBody.? )
 
-    def NamedTmpl[_: P]: P[Seq[data.Type]] =
+    def NamedTmpl[_](implicit p: P[Any]): P[Seq[data.Type]] =
       P( Constrs ~ TmplBody.? )
 
-    def DefTmpl[_: P]: P[Seq[data.Type]] =
+    def DefTmpl[_](implicit p: P[Any]): P[Seq[data.Type]] =
       P( (`extends` | `<:`) ~ AnonTmpl2 | TmplBody.map(_ => Seq.empty) )
 
-    def DefTmpl_?[_: P]: P[Seq[data.Type]] =
+    def DefTmpl_?[_](implicit p: P[Any]): P[Seq[data.Type]] =
       P(DefTmpl.?.map(_.getOrElse(Seq.empty)))
 
-    def AnonTmpl2[_: P]: P[Seq[data.Type]] =
+    def AnonTmpl2[_](implicit p: P[Any]): P[Seq[data.Type]] =
       P( EarlyDefTmpl | NamedTmpl | TmplBody.map(_ => Seq.empty) )
 
-    override def AnonTmpl[_: P] = AnonTmpl2.map(_ => ())
+    override def AnonTmpl[_](implicit p: P[Any]) = AnonTmpl2.map(_ => ())
 
-    def TraitDef[_: P]: P[(String, Option[Seq[Type]], Seq[Type])] =
+    def TraitDef[_](implicit p: P[Any]): P[(String, Option[Seq[Type]], Seq[Type])] =
       P( `trait` ~/ Id.! ~ TypeArgList2.? ~ DefTmpl_? )
 
-    def ObjDef[_: P]: P[Unit] = P( `case`.? ~ `object` ~/ Id ~ DefTmpl.? )
-    def ObjDef2[_: P] = P( `case`.!.? ~ `object` ~/ Id.! ~ DefTmpl_? )
+    def ObjDef[_](implicit p: P[Any]): P[Unit] = P( `case`.? ~ `object` ~/ Id ~ DefTmpl.? )
+    def ObjDef2[_](implicit p: P[Any]) = P( `case`.!.? ~ `object` ~/ Id.! ~ DefTmpl_? )
 
-    def Constr[_: P] = P( AnnotType2 ~~ (NotNewline ~ ParenArgList ).repX )
-    def AnnotType2[_: P] = P(SimpleType.!.map(s => data.Type(s.trim)) ~~ NLAnnot.repX )
+    def Constr[_](implicit p: P[Any]) = P( AnnotType2 ~~ (NotNewline ~ ParenArgList ).repX )
+    def AnnotType2[_](implicit p: P[Any]) = P(SimpleType.!.map(s => data.Type(s.trim)) ~~ NLAnnot.repX )
 
-//    def PkgObj[_: P] = P( ObjDef )
-//    def PkgBlock[_: P] = P( QualId ~/ `{` ~ TopStatSeq.? ~ `}` )
-//    def Pkg[_: P] = P( `package` ~/ (PkgBlock | PkgObj) )
-//    def TopStatSeq[_: P]: P[Unit] = {
+//    def PkgObj[_](implicit p: P[Any]) = P( ObjDef )
+//    def PkgBlock[_](implicit p: P[Any]) = P( QualId ~/ `{` ~ TopStatSeq.? ~ `}` )
+//    def Pkg[_](implicit p: P[Any]) = P( `package` ~/ (PkgBlock | PkgObj) )
+//    def TopStatSeq[_](implicit p: P[Any]): P[Unit] = {
 //      def Tmpl = P( (Annot ~~ OneNLMax).rep ~ Mod.rep ~ (TraitDef | ClsDef | ObjDef) )
 //      def TopStat = P( Pkg | Import | Tmpl )
 //      P( TopStat.repX(1, Semis) )
 //    }
-    def TopPkgSeq[_: P] = P( ((`package` ~ QualId) ~~ !(WS ~ "{")).repX(1, Semis) )
-//    def CompilationUnit[_: P]: P[Unit] = {
+    def TopPkgSeq[_](implicit p: P[Any]) = P( ((`package` ~ QualId) ~~ !(WS ~ "{")).repX(1, Semis) )
+//    def CompilationUnit[_](implicit p: P[Any]): P[Unit] = {
 //      def Body = P( TopPkgSeq ~~ (Semis ~ TopStatSeq).? | TopStatSeq )
 //      P( Semis.? ~ Body.? ~~ Semis.? ~ WL0 ~ End )
 //    }
@@ -110,10 +114,10 @@ object InputParser {
 
   import fastparse.MultiLineWhitespace._
 
-  private def flags[_: P]: P[Flags] =
+  private def flags[_](implicit p: P[Any]): P[Flags] =
     P(Scala.Mod.rep.!.map(Flags.fromStr))
 
-  private def cls[_: P]: P[Element] =
+  private def cls[_](implicit p: P[Any]): P[Element] =
     P(flags ~ Scala.ClsDef).map {
       case (f, (name, types, fields, sup)) =>
         if (f.isSealed && f.isAbstract)
@@ -137,7 +141,7 @@ object InputParser {
         }
     }
 
-  private def sealedTrait[_: P]: P[Element] =
+  private def sealedTrait[_](implicit p: P[Any]): P[Element] =
     P(flags.filter(_.isSealed) ~ Scala.TraitDef).map {
       case (_, (name, types, sup)) =>
         Element.Success(SealedBase(
@@ -148,7 +152,7 @@ object InputParser {
         ))
     }
 
-  private def obj[_: P]: P[Element] =
+  private def obj[_](implicit p: P[Any]): P[Element] =
     P(Scala.Mod.rep ~ Scala.ObjDef2)
       .filter(x => x._1.isDefined || x._3.nonEmpty)
       .map {
@@ -159,16 +163,16 @@ object InputParser {
           ))
       }
 
-  private def ignore[_: P]: P[Unit] =
+  private def ignore[_](implicit p: P[Any]): P[Unit] =
     P(Scala.TopPkgSeq | Scala.Import | Scala.Literals.Comment | Scala.Annot | (Scala.Mod.rep ~ Scala.Dcl))
 
-  private def recognised[_: P]: P[Element] =
+  private def recognised[_](implicit p: P[Any]): P[Element] =
     P(obj | cls | sealedTrait | ignore.rep(1).map(_ => Element.Empty))
 
-  private def unrecognised[_: P]: P[Element] =
+  private def unrecognised[_](implicit p: P[Any]): P[Element] =
     P((!recognised ~~ (CharPred(_.isWhitespace) | CharsWhile(!_.isWhitespace))).rep.!.map(Element.Unrecognised(_)))
 
-  private def main[_: P]: P[Iterator[Element]] =
+  private def main[_](implicit p: P[Any]): P[Iterator[Element]] =
     P((unrecognised ~ recognised).rep ~ unrecognised ~ End)
     .map(x => x._1.iterator.flatMap(y => y._1 :: y._2 :: Nil) ++ Iterator.single(x._2))
 

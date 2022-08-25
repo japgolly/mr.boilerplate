@@ -22,7 +22,7 @@ object OutputComponent {
 
     private val copyToClipboard: Callback =
       for {
-        textArea <- hiddenTextAreaRef.get
+        textArea <- hiddenTextAreaRef.get.asCBO
       } yield {
         textArea.select()
         document.execCommand("copy")
@@ -100,7 +100,7 @@ object OutputComponent {
     }
   }
 
-  val Component = ScalaComponent.builder[Props]("OutputComponent")
+  val Component = ScalaComponent.builder[Props]
     .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
     .build

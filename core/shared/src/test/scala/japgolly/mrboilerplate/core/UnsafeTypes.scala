@@ -1,7 +1,7 @@
 package japgolly.mrboilerplate.core
 
-import scala.collection.compat._
 import japgolly.mrboilerplate.core.data._
+import scala.collection.Factory
 
 object UnsafeTypes {
 

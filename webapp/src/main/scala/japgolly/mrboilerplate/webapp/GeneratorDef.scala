@@ -105,7 +105,7 @@ object GeneratorDef {
     def onChange(e: ReactEventFrom[html.Select]): Callback =
       for {
         v <- CallbackTo(e.target.value).toCBO
-        a <- CallbackOption.liftOption(options.whole.find(optionLabel(_) ==* v))
+        a <- CallbackOption.option(options.whole.find(optionLabel(_) ==* v))
         _ <- s.modState(l.set(a)).toCBO
       } yield ()
 

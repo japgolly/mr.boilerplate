@@ -1,9 +1,9 @@
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbt.pgp.PgpKeys
+import com.jsuereth.sbtpgp.PgpKeys
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import org.scalajs.sbtplugin.ScalaJSPlugin
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbtcrossproject.CrossPlugin.autoImport._
 import sbtrelease.ReleasePlugin.autoImport._
 import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
@@ -18,14 +18,14 @@ object Build {
 
   object Ver {
     val BetterMonadicFor = "0.3.1"
-    val Circe            = "0.12.3"
-    val FastParse        = "2.2.2"
-    val Microlibs        = "2.0"
-    val Monocle          = "2.0.0"
-    val MTest            = "0.7.1"
-    val Scala2           = "2.13.1"
-    val SJSReact         = "1.5.0"
-    val UnivEq           = "1.1.0"
+    val Circe            = "0.14.2"
+    val FastParse        = "2.3.3"
+    val Microlibs        = "4.1.0"
+    val Monocle          = "2.1.0"
+    val MTest            = "0.8.0"
+    val Scala2           = "2.13.8"
+    val SJSReact         = "2.1.1"
+    val UnivEq           = "2.0.0"
   }
 
   def byScalaVersion[A](f: PartialFunction[(Long, Long), Seq[A]]): Def.Initialize[Seq[A]] =
@@ -107,11 +107,12 @@ object Build {
     .settings(
       moduleName := "webapp",
       libraryDependencies ++= Seq(
-        "com.github.japgolly.scalajs-react" %%% "extra"            % Ver.SJSReact,
-        "com.github.japgolly.scalajs-react" %%% "ext-monocle-cats" % Ver.SJSReact,
-        "io.circe"                          %%% "circe-core"       % Ver.Circe,
-        "io.circe"                          %%% "circe-parser"     % Ver.Circe),
-      emitSourceMaps := true,
+        "com.github.japgolly.scalajs-react" %%% "core"               % Ver.SJSReact,
+        "com.github.japgolly.scalajs-react" %%% "extra"              % Ver.SJSReact,
+        "com.github.japgolly.scalajs-react" %%% "extra-ext-monocle2" % Ver.SJSReact,
+        "io.circe"                          %%% "circe-core"         % Ver.Circe,
+        "io.circe"                          %%% "circe-parser"       % Ver.Circe),
+      scalaJSLinkerConfig ~= { _.withSourceMap(true) },
       Compile / fastOptJS / artifactPath := (crossTarget.value / "mr-boilerplate.js"),
       Compile / fullOptJS / artifactPath := (crossTarget.value / "mr-boilerplate.js"))
 }

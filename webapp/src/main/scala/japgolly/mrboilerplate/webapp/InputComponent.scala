@@ -3,7 +3,7 @@ package japgolly.mrboilerplate.webapp
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.MonocleReact._
+import japgolly.scalajs.react.ReactMonocle._
 import monocle.macros.Lenses
 
 object InputComponent {
@@ -92,7 +92,7 @@ object InputComponent {
     }
   }
 
-  val Component = ScalaComponent.builder[Props]("InputComponent")
+  val Component = ScalaComponent.builder[Props]
     .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
     .build

@@ -26,7 +26,7 @@ private object PostProcess {
 
     MutableArray(indices)
       .sortBySchwartzian(tmp(_).fold(0)(-_.superTypes.size))
-      .iterator
+      .iterator()
       .foreach { i =>
         tmp(i) match {
           case Some(s: SealedBase) => tmp(i) = Some(s.copy(directChildren = direct(s)))
